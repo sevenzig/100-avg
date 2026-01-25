@@ -1,0 +1,49 @@
+# Docker Compose - Production Configuration
+#
+# This configuration sets up the Wingspan Score Tracker for production deployment:
+# - Uses multi-stage Dockerfile with optimized production build
+# - Runs built application on port 3000 (configurable via PORT env var)
+# - Creates persistent database volume (wingspan-db-prod)
+# - Includes health checks for container orchestration
+# - Loads environment from .env.production file
+#
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: wingspan-score-prod
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      # Only mount database directory for persistence
+      - wingspan-db-prod:/app/database
+    environment:
+      - NODE_ENV=production
+      - DATABASE_PATH=/app/database/wingspan.db
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3000
+    env_file:
+      - .env.production
+    restart: unless-stopped
+    networks:
+      - wingspan-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  wingspan-db-prod:
+    driver: local
+
+networks:
+  wingspan-network:
+    driver: bridge

@@ -1,0 +1,49 @@
+# Docker Compose - Development Configuration
+# 
+# This configuration sets up the Wingspan Score Tracker for local development:
+# - Uses Dockerfile.dev with hot-reload support
+# - Mounts source code volumes for live code changes
+# - Exposes port 5173 for SvelteKit dev server
+# - Creates persistent database volume (wingspan-db-dev)
+# - Loads environment from .env file
+#
+# Usage: docker-compose up
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: wingspan-score-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source code for hot reload
+      - ./src:/app/src:ro
+      - ./static:/app/static:ro
+      - ./scripts:/app/scripts:ro
+      # Mount database directory for persistence
+      - wingspan-db-dev:/app/database
+      # Mount node_modules to avoid conflicts
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - DATABASE_PATH=/app/database/wingspan.db
+      - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
+      - PORT=5173
+    env_file:
+      - .env
+    command: npm run dev
+    restart: unless-stopped
+    networks:
+      - wingspan-network
+
+volumes:
+  wingspan-db-dev:
+    driver: local
+
+networks:
+  wingspan-network:
+    driver: bridge

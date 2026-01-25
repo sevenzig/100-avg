@@ -1,0 +1,73 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+bun.lock
+
+# Build outputs
+build
+.svelte-kit
+dist
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation (optional - include if you want docs in image)
+# *.md
+# !README.md
+
+# Test files
+coverage
+.nyc_output
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js
+
+# Database files (will be in volume)
+database/*.db
+database/*.db-journal
+database/*.db-wal
+database/*.db-shm
+
+# Logs
+logs
+*.log
+
+# Temporary files
+tmp
+temp
+.cache
+
+# Docker files (don't need in image)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Design and planning docs
+design-system
+*.plan.md
+planning_docs
+
+# Shared UI/UX data (not needed in runtime)
+.shared
