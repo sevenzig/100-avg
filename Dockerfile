@@ -1,6 +1,7 @@
 # Multi-stage Dockerfile for Wingspan Score Tracker
 # Stage 1: Build stage
-FROM node:20-alpine AS builder
+# Using latest Node.js 20 LTS with security patches (includes OpenSSL fixes)
+FROM node:20.18-alpine AS builder
 
 # Install build dependencies for native modules (better-sqlite3)
 RUN apk add --no-cache python3 make g++
@@ -23,7 +24,8 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Production stage
-FROM node:20-alpine AS production
+# Using latest Node.js 20 LTS with security patches (includes OpenSSL fixes)
+FROM node:20.18-alpine AS production
 
 # Create app directory
 WORKDIR /app

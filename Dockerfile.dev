@@ -1,5 +1,6 @@
 # Development Dockerfile for Wingspan Score Tracker
-FROM node:20-alpine AS development
+# Using latest Node.js 20 LTS with security patches (includes OpenSSL fixes)
+FROM node:20.18-alpine AS development
 
 # Install build dependencies for native modules
 RUN apk add --no-cache python3 make g++
