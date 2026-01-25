@@ -12,7 +12,8 @@ COPY package*.json ./
 COPY bun.lock* ./
 
 # Install all dependencies (including dev dependencies)
-RUN npm ci
+# Using --legacy-peer-deps to resolve chart.js version conflict
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .

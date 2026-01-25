@@ -69,15 +69,24 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			}
 		}
 
-		// Check if user is a member of this league
-		const membership = db
-			.prepare('SELECT user_id FROM league_players WHERE league_id = ? AND user_id = ?')
-			.get(leagueId, userId);
+		// Check if user is an admin
+		const user = db
+			.prepare('SELECT is_admin FROM users WHERE id = ?')
+			.get(userId) as { is_admin: number | null } | undefined;
 
-		if (!membership) {
-			return json({ success: false, error: 'You are not a member of this league' }, {
-				status: 403
-			});
+		const isAdmin = user?.is_admin === 1;
+
+		// If not admin, check if user is a member of this league
+		if (!isAdmin) {
+			const membership = db
+				.prepare('SELECT user_id FROM league_players WHERE league_id = ? AND user_id = ?')
+				.get(leagueId, userId);
+
+			if (!membership) {
+				return json({ success: false, error: 'You are not a member of this league' }, {
+					status: 403
+				});
+			}
 		}
 
 		// Process players: create new users if needed, get existing user IDs

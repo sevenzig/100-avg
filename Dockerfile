@@ -13,7 +13,8 @@ COPY package*.json ./
 COPY bun.lock* ./
 
 # Install dependencies (including dev dependencies for build)
-RUN npm ci
+# Using --legacy-peer-deps to resolve chart.js version conflict
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -36,7 +37,8 @@ COPY package*.json ./
 
 # Install only production dependencies
 # Note: better-sqlite3 requires native compilation, but we'll copy compiled modules from builder
-RUN npm ci --only=production && \
+# Using --legacy-peer-deps to resolve chart.js version conflict
+RUN npm ci --only=production --legacy-peer-deps && \
     npm cache clean --force
 
 # Copy compiled native modules from builder (better-sqlite3)

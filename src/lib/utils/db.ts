@@ -107,4 +107,14 @@ export function initDatabase() {
 		CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 		CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 	`);
+
+	// Add is_admin column if it doesn't exist (for existing databases)
+	try {
+		database.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0');
+	} catch (error: any) {
+		// Column already exists, ignore error
+		if (!error.message.includes('duplicate column')) {
+			throw error;
+		}
+	}
 }
