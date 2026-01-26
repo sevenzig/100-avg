@@ -8,6 +8,7 @@ node_modules
 !.env.example
 vite.config.js.timestamp
 vite.config.ts.timestamp
-database/*.db
+# Temporarily allowing database for initial deploy - REMOVE AFTER DEPLOY
+# database/*.db
 database/*.db-journal
 *.log

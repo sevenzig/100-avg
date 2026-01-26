@@ -55,6 +55,9 @@ COPY --from=builder --chown=nodejs:nodejs /app/static ./static
 RUN mkdir -p /app/database && \
     chown -R nodejs:nodejs /app/database
 
+# Copy existing database (for initial seeding)
+COPY --chown=nodejs:nodejs database/wingspan.db /app/database/wingspan.db
+
 # Switch to non-root user
 USER nodejs
 
