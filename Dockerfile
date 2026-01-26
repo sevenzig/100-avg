@@ -4,7 +4,6 @@
 FROM node:20.18-alpine AS builder
 
 # Build arguments for flexibility
-ARG NODE_ENV=production
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION=1.0.0
@@ -31,21 +30,36 @@ WORKDIR /app
 
 # Copy package files first for better layer caching
 # Include package-lock.json for reproducible builds
-COPY package*.json package-lock.json* bun.lock* ./
+COPY package.json package-lock.json ./
 
 # Install dependencies (including dev dependencies for build)
-# Using --legacy-peer-deps to resolve chart.js version conflict
+# Use --legacy-peer-deps to resolve chart.js version conflict
+# Explicitly set NODE_ENV to development to ensure dev dependencies are installed
+# (npm ci skips dev dependencies if NODE_ENV=production)
 # Clean npm cache in same layer to reduce image size
-RUN npm ci --legacy-peer-deps && \
+# Verify critical packages are installed
+RUN NODE_ENV=development npm ci --legacy-peer-deps && \
     npm cache clean --force && \
-    ls -la node_modules/.bin/ | grep vite || echo "Warning: vite not found in node_modules/.bin"
+    echo "Installed packages: $(npm list --depth=0 2>/dev/null | wc -l)" && \
+    (test -d node_modules/@sveltejs/kit || (echo "ERROR: @sveltejs/kit not installed" && ls -la node_modules/@sveltejs/ 2>&1 && exit 1)) && \
+    (test -f node_modules/.bin/vite || (echo "ERROR: vite not found in node_modules/.bin" && exit 1)) && \
+    (test -f node_modules/.bin/svelte-kit || (echo "ERROR: svelte-kit not found in node_modules/.bin" && exit 1)) && \
+    echo "✓ Dependencies installed successfully"
 
 # Copy source code (this layer will invalidate cache when code changes)
+# Exclude node_modules and build artifacts via .dockerignore
 COPY . .
+
+# Generate SvelteKit configuration files before building
+# This creates .svelte-kit/tsconfig.json and other required files
+# Ensure the directory exists and has proper permissions
+RUN npx svelte-kit sync && \
+    (test -f .svelte-kit/tsconfig.json || (echo "ERROR: .svelte-kit/tsconfig.json not generated" && exit 1)) && \
+    echo "✓ SvelteKit configuration generated"
 
 # Build the application
 # Use npx to ensure vite is found from node_modules
-RUN npx vite build
+RUN npm run build
 
 # Stage 2: Production stage
 # Using latest Node.js 20 LTS with security patches (includes OpenSSL fixes)
@@ -76,7 +90,7 @@ RUN addgroup -g 1001 -S nodejs && \
     chown -R nodejs:nodejs /app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
 # Install only production dependencies
 # Note: better-sqlite3 requires native compilation, but we'll copy compiled modules from builder

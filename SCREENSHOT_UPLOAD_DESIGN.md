@@ -113,15 +113,20 @@ This document outlines the design for a feature that allows users to upload scre
 {
   success: false;
   error: string;
-  code?: 'PARSE_ERROR' | 'INVALID_FORMAT' | 'NO_PLAYERS_FOUND' | 'SERVER_ERROR';
+  // Note: Aligned with existing API error format - no 'code' field for consistency
 }
 ```
 
 **Validation:**
 - File size limit: 10MB
 - Allowed formats: PNG, JPG, JPEG
+- MIME type validation (image/png, image/jpeg, image/jpg)
+- Magic number validation (file header verification)
+- File extension whitelist enforcement
 - League membership check
 - Image dimension validation (min 800x600)
+- Input sanitization for extracted player names
+- Score value range validation (0-999 per category)
 
 #### 2.2 POST /api/games (Existing - Enhanced)
 **Purpose:** Save extracted game data (reuse existing endpoint)
@@ -131,7 +136,9 @@ This document outlines the design for a feature that allows users to upload scre
 ### 3. Image Processing Service
 
 #### 3.1 Image Parser Service
-**Location:** `src/lib/services/image-parser.ts`
+**Location:** `src/lib/utils/image-parser.ts`
+
+**Note:** Using `utils` directory to match existing codebase structure (no `services` directory exists)
 
 **Responsibilities:**
 - Image preprocessing (resize, enhance contrast)
@@ -156,10 +163,11 @@ This document outlines the design for a feature that allows users to upload scre
 - Cons: Requires model training, infrastructure
 - Services: OpenAI Vision API, Anthropic Claude Vision
 
-**Recommended: Option C (OpenAI Vision API)**
+**Recommended: Option C (Anthropic Claude Vision)**
 - High accuracy for structured data extraction
 - Can be prompted specifically for Wingspan score format
 - Reasonable pricing for this use case
+- **Model:** Use `"claude-3-5-sonnet-20241022"` or `"claude-3-opus-20240229"` (current vision-capable models)
 
 **Parser Logic:**
 ```typescript
@@ -208,7 +216,7 @@ interface ImageParser {
 ┌─────────────────┐
 │ Image Parser    │
 │ Service         │
-│ - Vision API    │
+│ - Claude API    │
 │ - Extract Data  │
 │ - Validate      │
 └──────┬──────────┘
@@ -249,30 +257,52 @@ ALTER TABLE games ADD COLUMN source TEXT DEFAULT 'manual';
 - **Low confidence:** Show warning, allow user to edit before saving
 - **Invalid format:** Clear error message with format requirements
 - **Partial extraction:** Show what was found, allow manual completion
+- **API timeout:** Retry once, then show error with manual entry option
+- **API rate limit:** Show user-friendly message with retry suggestion
 
 #### 6.2 Validation Errors
 - **Player not in league:** Offer to add player or select existing
 - **Score mismatch:** Highlight discrepancy, allow correction
 - **Missing data:** Show which fields need manual input
+- **File validation errors:** Clear messages for size, type, format issues
+- **Rate limit exceeded:** Show remaining time until reset
+
+#### 6.3 Error Response Format
+**Consistent with existing API:**
+```typescript
+{
+  success: false,
+  error: string // Human-readable error message
+}
+```
+**Note:** No `code` field to maintain consistency with existing `/api/games` endpoint.
 
 ### 7. Security Considerations
 
 1. **File Upload Security:**
    - Validate file type (MIME type + extension)
+   - **Magic number validation** (verify file headers, not just MIME type)
+   - **File extension whitelist** enforcement
    - Limit file size (10MB)
-   - Scan for malicious content
    - Store in secure temporary location
-   - Clean up temp files after processing
+   - **Clean up temp files immediately after processing** (no scheduled cleanup needed)
+   - **Input sanitization** for extracted player names (prevent XSS)
+   - **Score value validation** (range checks: 0-999 per category)
 
 2. **Authentication:**
    - Require user authentication
    - Verify league membership
-   - Rate limiting (e.g., 10 uploads/hour per user)
+   - **Rate limiting:** In-memory implementation (simple Map-based, 10 uploads/hour per user)
+   - **Future:** Migrate to Redis for distributed rate limiting at scale
+   - **API key management:** Monitor usage, set cost budgets, implement key rotation strategy
+   - **Anthropic API:** Uses `ANTHROPIC_API_KEY` environment variable
 
 3. **Data Privacy:**
-   - Delete uploaded images after processing
+   - Delete uploaded images **immediately after parsing** (no temp file storage needed)
+   - Process image in memory, don't write to disk
    - Don't store images permanently
-   - Log minimal metadata only
+   - Log minimal metadata only (no image data in logs)
+   - **Timeout handling:** 30-second timeout for parsing operations
 
 ### 8. Performance Optimization
 
@@ -282,8 +312,9 @@ ALTER TABLE games ADD COLUMN source TEXT DEFAULT 'manual';
    - Use WebP format if supported
 
 2. **Caching:**
-   - Cache parsed results temporarily (5 min)
-   - Avoid re-parsing same image
+   - Cache parsed results temporarily (5 min) - optional optimization
+   - Use image hash to avoid re-parsing identical images
+   - **Note:** In-memory cache for single-instance deployments
 
 3. **Async Processing:**
    - Process in background if > 5 seconds
@@ -302,7 +333,8 @@ ALTER TABLE games ADD COLUMN source TEXT DEFAULT 'manual';
 
 3. **Edit Interface:**
    - Inline editing of extracted data
-   - Auto-save draft (localStorage)
+   - Auto-save draft (localStorage) - prevents data loss if modal closes
+   - Session recovery for interrupted uploads
 
 4. **Confidence Indicators:**
    - Visual confidence score
@@ -320,7 +352,7 @@ ALTER TABLE games ADD COLUMN source TEXT DEFAULT 'manual';
 #### Phase 1: Basic Upload & Parsing
 - File upload component
 - API endpoint for upload
-- Basic image parser (OpenAI Vision)
+- Basic image parser (Claude Vision)
 - Data extraction and validation
 - Save to database
 
@@ -346,68 +378,156 @@ ALTER TABLE games ADD COLUMN source TEXT DEFAULT 'manual';
 
 **Backend:**
 - SvelteKit API routes
-- OpenAI Vision API (or alternative)
+- Anthropic Claude Vision API (or alternative)
 - Sharp (image processing, optional)
-- Multer/formidable (file handling)
+- **SvelteKit native file handling** (uses `request.formData()`, not Multer/formidable)
 
 **Dependencies to Add:**
 ```json
 {
-  "openai": "^4.0.0", // or alternative vision API client
+  "@anthropic-ai/sdk": "^0.27.0", // Anthropic Claude SDK
   "sharp": "^0.32.0" // optional, for image processing
 }
 ```
 
 ### 12. API Integration Example
 
-**OpenAI Vision API Usage:**
+**SvelteKit File Upload Implementation:**
 ```typescript
-import OpenAI from 'openai';
+// src/routes/api/games/upload-screenshot/+server.ts
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
+import { getUserId } from '$lib/utils/auth';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+export const POST: RequestHandler = async ({ request, cookies }) => {
+  const userId = getUserId(cookies);
+  if (!userId) {
+    return json({ success: false, error: 'Not authenticated' }, { status: 401 });
+  }
+
+  try {
+    // SvelteKit uses request.formData() for multipart/form-data
+    const formData = await request.formData();
+    const file = formData.get('image') as File;
+    const leagueId = parseInt(formData.get('leagueId') as string);
+
+    if (!file || !leagueId) {
+      return json({ success: false, error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // Validate file
+    const validationResult = validateImageFile(file);
+    if (!validationResult.valid) {
+      return json({ success: false, error: validationResult.error }, { status: 400 });
+    }
+
+    // Convert File to Buffer for processing
+    const arrayBuffer = await file.arrayBuffer();
+    const imageBuffer = Buffer.from(arrayBuffer);
+
+    // Parse screenshot (see image-parser.ts)
+    const extractedData = await parseScreenshot(imageBuffer);
+
+    // Return extracted data for user review
+    return json({
+      success: true,
+      extractedData,
+      confidence: calculateConfidence(extractedData),
+      warnings: extractWarnings(extractedData)
+    });
+  } catch (error) {
+    console.error('Upload screenshot error:', error);
+    return json({ success: false, error: 'Internal server error' }, { status: 500 });
+  }
+};
+```
+
+**Anthropic Claude Vision API Usage:**
+```typescript
+// src/lib/utils/image-parser.ts
+import Anthropic from '@anthropic-ai/sdk';
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 async function parseScreenshot(imageBuffer: Buffer) {
-  const response = await openai.chat.completions.create({
-    model: "gpt-4-vision-preview",
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "text",
-            text: `Extract game data from this Wingspan score screenshot. 
-            Return JSON in this exact format:
+  try {
+    const base64Image = imageBuffer.toString('base64');
+    const mimeType = imageBuffer[0] === 0x89 ? 'image/png' : 'image/jpeg';
+
+    const response = await anthropic.messages.create({
+      model: "claude-3-5-sonnet-20241022", // Current vision-capable model
+      max_tokens: 1024,
+      timeout: 30000, // 30 second timeout
+      messages: [
+        {
+          role: "user",
+          content: [
             {
-              "players": [
-                {
-                  "playerName": "string",
-                  "totalScore": number,
-                  "scoringBreakdown": {
-                    "birds": number,
-                    "bonusCards": number,
-                    "endOfRoundGoals": number,
-                    "eggs": number,
-                    "foodOnCards": number,
-                    "tuckedCards": number,
-                    "nectar": number
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mimeType,
+                data: base64Image
+              }
+            },
+            {
+              type: "text",
+              text: `Extract game data from this Wingspan score screenshot. 
+              Return JSON in this exact format:
+              {
+                "players": [
+                  {
+                    "playerName": "string",
+                    "totalScore": number,
+                    "scoringBreakdown": {
+                      "birds": number,
+                      "bonusCards": number,
+                      "endOfRoundGoals": number,
+                      "eggs": number,
+                      "foodOnCards": number,
+                      "tuckedCards": number,
+                      "nectar": number
+                    }
                   }
-                }
-              ]
-            }`
-          },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:image/png;base64,${imageBuffer.toString('base64')}`
+                ]
+              }`
             }
-          }
-        ]
+          ]
+        }
+      ]
+    });
+    
+    const content = response.content[0];
+    if (content.type !== 'text') {
+      throw new Error('Unexpected response type from Claude API');
+    }
+    
+    const textContent = content.text;
+    if (!textContent) {
+      throw new Error('No content returned from Claude API');
+    }
+    
+    // Extract JSON from response (Claude may wrap it in markdown code blocks)
+    const jsonMatch = textContent.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || 
+                      textContent.match(/(\{[\s\S]*\})/);
+    
+    if (!jsonMatch) {
+      throw new Error('Could not extract JSON from Claude response');
+    }
+    
+    return JSON.parse(jsonMatch[1]);
+  } catch (error) {
+    if (error instanceof Error) {
+      // Handle API rate limits, timeouts, etc.
+      if (error.message.includes('rate limit') || error.message.includes('429')) {
+        throw new Error('API rate limit exceeded. Please try again later.');
       }
-    ],
-    max_tokens: 1000
-  });
-  
-  return JSON.parse(response.choices[0].message.content);
+      if (error.message.includes('timeout')) {
+        throw new Error('Request timed out. Please try again.');
+      }
+    }
+    throw error;
+  }
 }
 ```
 
@@ -420,8 +540,10 @@ async function parseScreenshot(imageBuffer: Buffer) {
 
 2. **Integration Tests:**
    - API endpoint with mock images
-   - File upload handling
+   - File upload handling (SvelteKit formData)
    - Database save operations
+   - **Mock Claude API** responses for consistent testing
+   - Test fixtures for various image formats and edge cases
 
 3. **E2E Tests:**
    - Complete upload flow
@@ -430,8 +552,11 @@ async function parseScreenshot(imageBuffer: Buffer) {
 
 4. **Test Data:**
    - Sample Wingspan screenshots
-   - Edge cases (blurry, rotated, partial)
+   - Edge cases (blurry, rotated, partial, corrupted)
    - Various player counts (2-5)
+   - Invalid formats (wrong file types, oversized)
+   - Network failure scenarios
+   - API timeout scenarios
 
 ### 14. Monitoring & Analytics
 
@@ -463,26 +588,177 @@ src/
 │   ├── components/
 │   │   └── scoreboard/
 │   │       └── UploadScreenshotModal.svelte (NEW)
-│   ├── services/
-│   │   └── image-parser.ts (NEW)
 │   └── utils/
-│       └── file-upload.ts (NEW, optional)
+│       ├── image-parser.ts (NEW) - Image parsing service
+│       └── file-validation.ts (NEW) - File validation utilities
 ├── routes/
 │   └── api/
 │       └── games/
 │           └── upload-screenshot/
 │               └── +server.ts (NEW)
-└── static/
-    └── uploads/ (temporary, gitignored)
+└── types/
+    └── screenshot-upload.ts (NEW) - Type definitions
 ```
+
+**Note:** No `services` directory - using `utils` to match existing codebase structure. No `static/uploads` needed - processing in memory.
 
 ## Environment Variables
 
 ```env
 # .env
-OPENAI_API_KEY=sk-... # or alternative vision API key
+ANTHROPIC_API_KEY=sk-ant-... # Anthropic Claude API key
 MAX_UPLOAD_SIZE=10485760 # 10MB in bytes
-UPLOAD_TEMP_DIR=./uploads/temp
+# Note: No UPLOAD_TEMP_DIR needed - processing in memory
+```
+
+## Type Definitions
+
+```typescript
+// src/types/screenshot-upload.ts
+
+export interface ExtractedPlayer {
+  playerName: string;
+  placement: number;
+  totalScore: number;
+  scoringBreakdown: {
+    birds: number;
+    bonusCards: number;
+    endOfRoundGoals: number;
+    eggs: number;
+    foodOnCards: number;
+    tuckedCards: number;
+    nectar: number;
+  };
+}
+
+export interface ExtractedGameData {
+  players: ExtractedPlayer[];
+}
+
+export interface ParsingResult {
+  success: boolean;
+  extractedData?: ExtractedGameData;
+  confidence?: number;
+  warnings?: string[];
+  error?: string;
+}
+
+export interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
+```
+
+## File Validation Implementation
+
+```typescript
+// src/lib/utils/file-validation.ts
+
+const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/jpg'];
+const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MIN_IMAGE_DIMENSIONS = { width: 800, height: 600 };
+
+// Magic numbers for image file headers
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+const JPEG_MAGIC = Buffer.from([0xFF, 0xD8, 0xFF]);
+
+export function validateImageFile(file: File): ValidationResult {
+  // MIME type check
+  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+    return { valid: false, error: 'Invalid file type. Only PNG and JPEG images are allowed.' };
+  }
+
+  // File extension check
+  const extension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+  if (!ALLOWED_EXTENSIONS.includes(extension)) {
+    return { valid: false, error: 'Invalid file extension.' };
+  }
+
+  // File size check
+  if (file.size > MAX_FILE_SIZE) {
+    return { valid: false, error: `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit.` };
+  }
+
+  return { valid: true };
+}
+
+export async function validateImageHeader(file: File): Promise<ValidationResult> {
+  // Read first bytes to verify magic numbers
+  const arrayBuffer = await file.slice(0, 8).arrayBuffer();
+  const header = Buffer.from(arrayBuffer);
+
+  const isPNG = header.subarray(0, 8).equals(PNG_MAGIC);
+  const isJPEG = header.subarray(0, 3).equals(JPEG_MAGIC);
+
+  if (!isPNG && !isJPEG) {
+    return { valid: false, error: 'File header does not match image format.' };
+  }
+
+  return { valid: true };
+}
+
+export function sanitizePlayerName(name: string): string {
+  // Remove potentially dangerous characters, limit length
+  return name
+    .trim()
+    .replace(/[<>\"']/g, '') // Remove HTML/script tags
+    .substring(0, 50); // Limit length
+}
+
+export function validateScoreValue(value: number, category: string): boolean {
+  // Validate score ranges (0-999 is reasonable for Wingspan)
+  if (value < 0 || value > 999 || !Number.isInteger(value)) {
+    return false;
+  }
+  return true;
+}
+```
+
+## Rate Limiting Implementation
+
+```typescript
+// src/lib/utils/rate-limiter.ts
+
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+}
+
+const rateLimitStore = new Map<number, RateLimitEntry>();
+const RATE_LIMIT = 10; // uploads per hour
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in milliseconds
+
+export function checkRateLimit(userId: number): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(userId);
+
+  if (!entry || now > entry.resetTime) {
+    // Reset or create new entry
+    rateLimitStore.set(userId, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW
+    });
+    return { allowed: true, remaining: RATE_LIMIT - 1 };
+  }
+
+  if (entry.count >= RATE_LIMIT) {
+    return { allowed: false, remaining: 0 };
+  }
+
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT - entry.count };
+}
+
+// Cleanup old entries periodically (optional)
+setInterval(() => {
+  const now = Date.now();
+  for (const [userId, entry] of rateLimitStore.entries()) {
+    if (now > entry.resetTime) {
+      rateLimitStore.delete(userId);
+    }
+  }
+}, 5 * 60 * 1000); // Every 5 minutes
 ```
 
 ## Summary
@@ -496,3 +772,39 @@ This design provides a complete solution for screenshot-based game data entry wi
 - ✅ Scalable architecture
 
 The implementation can be done incrementally, starting with basic functionality and adding enhancements based on user feedback.
+
+## Implementation Notes
+
+### Key Improvements from Analysis
+
+1. **SvelteKit-Native Implementation:**
+   - Uses `request.formData()` instead of Multer/formidable
+   - Processes files in memory (no temp file storage needed)
+   - Follows SvelteKit patterns and conventions
+
+2. **Claude Vision API Integration:**
+   - Using Anthropic Claude Vision API (`claude-3-5-sonnet-20241022`)
+   - Added timeout handling and error recovery
+   - JSON extraction from Claude's text responses (handles markdown code blocks)
+
+3. **Enhanced Security:**
+   - Magic number validation for file headers
+   - Input sanitization for extracted data
+   - Comprehensive file validation
+
+4. **Consistent Error Handling:**
+   - Aligned with existing API error format
+   - No `code` field for consistency
+
+5. **Rate Limiting:**
+   - Simple in-memory implementation
+   - Documented migration path to Redis
+
+6. **Type Safety:**
+   - Comprehensive TypeScript definitions
+   - Validation utilities with proper types
+
+7. **File Structure:**
+   - Uses `utils` directory (matches existing codebase)
+   - No unnecessary temp directories
+   - Clear separation of concerns

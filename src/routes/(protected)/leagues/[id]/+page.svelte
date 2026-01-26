@@ -4,6 +4,7 @@
 	import { currentLeague, leagueStats, leagues } from '$lib/stores/league';
 	import { activeModal } from '$lib/stores/ui';
 	import AddGameModal from '$lib/components/scoreboard/AddGameModal.svelte';
+	import UploadScreenshotModal from '$lib/components/scoreboard/UploadScreenshotModal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import type { LeagueStats } from '$lib/stores/league';
 
@@ -77,6 +78,10 @@
 		activeModal.set('add-game');
 	}
 
+	function handleUploadScreenshot() {
+		activeModal.set('upload-screenshot');
+	}
+
 	async function handleGameSubmit(event: CustomEvent<{ playedAt: string; scores: any[] }>) {
 		try {
 			const response = await fetch('/api/games', {
@@ -102,6 +107,11 @@
 	}
 
 	function handleCloseModal() {
+		activeModal.set(null);
+	}
+
+	async function handleScreenshotSaved() {
+		await loadLeagueData();
 		activeModal.set(null);
 	}
 
@@ -272,7 +282,10 @@
 	{#if $currentLeague}
 		<div class="flex items-center justify-between px-3 sm:px-6 py-3 bg-white border-b border-slate-200 shrink-0">
 			<h1 class="text-lg sm:text-xl font-bold text-slate-900">{$currentLeague.name}</h1>
-			<Button variant="primary" size="sm" on:click={handleAddGame}>+ Add Game</Button>
+			<div class="flex gap-2">
+				<Button variant="ghost" size="sm" on:click={handleUploadScreenshot}>📷 Upload Screenshot</Button>
+				<Button variant="primary" size="sm" on:click={handleAddGame}>+ Add Game</Button>
+			</div>
 		</div>
 	{/if}
 
@@ -842,6 +855,13 @@
 		leaguePlayers={$currentLeague.players}
 		on:close={handleCloseModal}
 		on:submit={handleGameSubmit}
+	/>
+	<UploadScreenshotModal
+		open={$activeModal === 'upload-screenshot'}
+		leagueId={leagueId}
+		leaguePlayers={$currentLeague.players}
+		on:close={handleCloseModal}
+		on:saved={handleScreenshotSaved}
 	/>
 {/if}
 

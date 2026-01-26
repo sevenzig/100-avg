@@ -3,7 +3,7 @@
 	export let label: string = '';
 	export let error: string = '';
 	export let placeholder: string = '';
-	export let value: string = '';
+	export let value: string | number = '';
 	export let required = false;
 	export let disabled = false;
 	export let className: string = '';
@@ -11,6 +11,22 @@
 	export let max: string | number | undefined = undefined;
 
 	let inputId = `input-${Math.random().toString(36).substr(2, 9)}`;
+
+	// Convert value to string for HTML input elements
+	$: stringValue = typeof value === 'number' ? value.toString() : value;
+	$: stringMin = typeof min === 'number' ? min.toString() : min;
+	$: stringMax = typeof max === 'number' ? max.toString() : max;
+	
+	// Handle input for number type - convert string back to number
+	function handleNumberInput(event: Event) {
+		if (type === 'number' && typeof value === 'number') {
+			const input = event.target as HTMLInputElement;
+			const numValue = input.value === '' ? 0 : parseFloat(input.value) || 0;
+			if (numValue !== value) {
+				value = numValue;
+			}
+		}
+	}
 </script>
 
 <div class="form-control w-full {className}">
@@ -65,11 +81,11 @@
 			{placeholder}
 			{required}
 			{disabled}
-			bind:value
-			min={min}
-			max={max}
+			bind:value={stringValue}
+			min={stringMin}
+			max={stringMax}
 			class="w-full px-4 py-2.5 border rounded-md bg-white text-slate-900 placeholder-slate-400 font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed {error ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-slate-300'}"
-			on:input
+			on:input={handleNumberInput}
 			on:blur
 		/>
 	{:else}
