@@ -55,8 +55,12 @@ COPY --from=builder --chown=nodejs:nodejs /app/static ./static
 RUN mkdir -p /app/database && \
     chown -R nodejs:nodejs /app/database
 
-# Note: Database will be created automatically by the application on first run
-# If you need to seed an existing database, copy it into the volume after deployment
+# Copy database file from builder stage if it exists (for initial seed data)
+# If a volume is mounted in production, it will override this file
+# If no volume exists, this seeded database will be used
+# Using shell glob to handle case where file might not exist
+RUN --mount=from=builder,source=/app/database,target=/tmp/db \
+    sh -c 'if ls /tmp/db/*.db 1> /dev/null 2>&1; then cp /tmp/db/*.db /app/database/ && chown nodejs:nodejs /app/database/*.db; fi'
 
 # Switch to non-root user
 USER nodejs

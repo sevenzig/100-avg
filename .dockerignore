@@ -44,8 +44,9 @@ coverage
 *.spec.ts
 *.spec.js
 
-# Database files (will be in volume, never include in image)
-database/*.db
+# Database files - allow .db for initial seeding, but exclude journal/WAL files
+# The .db file will be copied to image for initial seed data
+# Journal files are temporary and should never be included
 database/*.db-journal
 database/*.db-wal
 database/*.db-shm
