@@ -49,7 +49,7 @@
 								<li>
 									<a 
 										href="/profile" 
-										class="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-md transition-colors {page.url.pathname === '/profile' ? 'bg-slate-100 font-medium' : ''}"
+										class="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-md transition-colors {$page.url.pathname === '/profile' ? 'bg-slate-100 font-medium' : ''}"
 									>
 										Profile
 									</a>
@@ -58,7 +58,7 @@
 									<li>
 										<a 
 											href="/admin" 
-											class="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-md transition-colors {page.url.pathname === '/admin' ? 'bg-slate-100 font-medium' : ''}"
+											class="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-md transition-colors {$page.url.pathname === '/admin' ? 'bg-slate-100 font-medium' : ''}"
 										>
 											Admin
 										</a>
