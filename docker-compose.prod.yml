@@ -16,8 +16,8 @@ services:
       dockerfile: Dockerfile
       target: production
     container_name: wingspan-score-prod
-    ports:
-      - "${PORT:-3000}:3000"
+    expose:
+      - "3000"
     volumes:
       # Only mount database directory for persistence
       - wingspan-db-prod:/app/database
