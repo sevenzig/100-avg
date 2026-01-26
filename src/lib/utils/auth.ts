@@ -2,12 +2,26 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 import { env } from '$env/dynamic/private';
+import { dev } from '$app/environment';
 
-const JWT_SECRET = env.JWT_SECRET || 'your-secret-key-change-in-production';
+// Security constants
+const BCRYPT_ROUNDS = 10;
 const JWT_EXPIRES_IN = '7d';
 
+// In production, JWT_SECRET must be set - fail fast if missing
+const JWT_SECRET = (() => {
+	if (env.JWT_SECRET) {
+		return env.JWT_SECRET;
+	}
+	if (dev) {
+		console.warn('Warning: JWT_SECRET not set, using development fallback');
+		return 'dev-only-secret-do-not-use-in-production';
+	}
+	throw new Error('JWT_SECRET environment variable is required in production');
+})();
+
 export async function hashPassword(password: string): Promise<string> {
-	return bcrypt.hash(password, 10);
+	return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {

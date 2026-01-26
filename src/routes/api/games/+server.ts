@@ -1,9 +1,37 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
+import type { RequestHandler, Cookies } from './$types';
 import { getDb } from '$lib/utils/db';
 import { verifyToken, hashPassword } from '$lib/utils/auth';
 
-function getUserId(cookies: any): number | null {
+interface ScoreInput {
+	userId?: number;
+	username?: string;
+	isNew?: boolean;
+	placement: number;
+	totalScore: number;
+	birds?: number;
+	bonusCards?: number;
+	endOfRoundGoals?: number;
+	eggs?: number;
+	foodOnCards?: number;
+	tuckedCards?: number;
+	nectar?: number;
+}
+
+interface ProcessedScore {
+	scoreUserId: number;
+	placement: number;
+	totalScore: number;
+	birds: number;
+	bonusCards: number;
+	endOfRoundGoals: number;
+	eggs: number;
+	foodOnCards: number;
+	tuckedCards: number;
+	nectar: number;
+}
+
+function getUserId(cookies: Cookies): number | null {
 	const token = cookies.get('token');
 	if (!token) return null;
 	const decoded = verifyToken(token);
@@ -11,8 +39,8 @@ function getUserId(cookies: any): number | null {
 }
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
-	const userId = getUserId(cookies);
-	if (!userId) {
+	const currentUserId = getUserId(cookies);
+	if (!currentUserId) {
 		return json({ success: false, error: 'Not authenticated' }, { status: 401 });
 	}
 
@@ -37,6 +65,87 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		const db = getDb();
 
+		// Check if user is an admin
+		const user = db
+			.prepare('SELECT is_admin FROM users WHERE id = ?')
+			.get(currentUserId) as { is_admin: number | null } | undefined;
+
+		const isAdmin = user?.is_admin === 1;
+
+		// If not admin, check if user is a member of this league
+		if (!isAdmin) {
+			const membership = db
+				.prepare('SELECT user_id FROM league_players WHERE league_id = ? AND user_id = ?')
+				.get(leagueId, currentUserId);
+
+			if (!membership) {
+				return json({ success: false, error: 'You are not a member of this league' }, {
+					status: 403
+				});
+			}
+		}
+
+		// Process players: create new users if needed, get existing user IDs
+		const processedScores: ProcessedScore[] = [];
+
+		for (const score of scores as ScoreInput[]) {
+			let scoreUserId: number;
+
+			if (score.isNew && score.username) {
+				// Check if username already exists
+				const existingUser = db
+					.prepare('SELECT id FROM users WHERE username = ?')
+					.get(score.username) as { id: number } | undefined;
+
+				if (existingUser) {
+					scoreUserId = existingUser.id;
+				} else {
+					// Create new user with a default password
+					const defaultPassword = `temp_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+					const passwordHash = await hashPassword(defaultPassword);
+					const email = `${score.username.toLowerCase().replace(/\s+/g, '')}@wingspan.local`;
+
+					const userResult = db
+						.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)')
+						.run(score.username, email, passwordHash);
+					scoreUserId = userResult.lastInsertRowid as number;
+				}
+			} else if (score.userId) {
+				scoreUserId = score.userId;
+			} else if (score.username) {
+				// Try to find user by username
+				const foundUser = db
+					.prepare('SELECT id FROM users WHERE username = ?')
+					.get(score.username) as { id: number } | undefined;
+
+				if (!foundUser) {
+					return json(
+						{ success: false, error: `User "${score.username}" not found` },
+						{ status: 400 }
+					);
+				}
+				scoreUserId = foundUser.id;
+			} else {
+				return json(
+					{ success: false, error: 'Each player must have a userId or username' },
+					{ status: 400 }
+				);
+			}
+
+			processedScores.push({
+				scoreUserId,
+				placement: score.placement,
+				totalScore: score.totalScore,
+				birds: score.birds || 0,
+				bonusCards: score.bonusCards || 0,
+				endOfRoundGoals: score.endOfRoundGoals || 0,
+				eggs: score.eggs || 0,
+				foodOnCards: score.foodOnCards || 0,
+				tuckedCards: score.tuckedCards || 0,
+				nectar: score.nectar || 0
+			});
+		}
+
 		// Validate placements - must be unique and sequential starting from 1
 		const placements = processedScores.map((s) => s.placement).sort((a, b) => a - b);
 		const expectedPlacements = Array.from({ length: processedScores.length }, (_, i) => i + 1);
@@ -50,16 +159,16 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			);
 		}
 
-		// Validate each score
+		// Validate each score breakdown matches total
 		for (const score of processedScores) {
 			const sum =
-				(score.birds || 0) +
-				(score.bonusCards || 0) +
-				(score.endOfRoundGoals || 0) +
-				(score.eggs || 0) +
-				(score.foodOnCards || 0) +
-				(score.tuckedCards || 0) +
-				(score.nectar || 0);
+				score.birds +
+				score.bonusCards +
+				score.endOfRoundGoals +
+				score.eggs +
+				score.foodOnCards +
+				score.tuckedCards +
+				score.nectar;
 
 			if (sum !== score.totalScore) {
 				return json(
@@ -69,109 +178,13 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			}
 		}
 
-		// Check if user is an admin
-		const user = db
-			.prepare('SELECT is_admin FROM users WHERE id = ?')
-			.get(userId) as { is_admin: number | null } | undefined;
-
-		const isAdmin = user?.is_admin === 1;
-
-		// If not admin, check if user is a member of this league
-		if (!isAdmin) {
-			const membership = db
-				.prepare('SELECT user_id FROM league_players WHERE league_id = ? AND user_id = ?')
-				.get(leagueId, userId);
-
-			if (!membership) {
-				return json({ success: false, error: 'You are not a member of this league' }, {
-					status: 403
-				});
-			}
-		}
-
-		// Process players: create new users if needed, get existing user IDs
-		const processedScores: Array<{
-			userId: number;
-			placement: number;
-			totalScore: number;
-			birds: number;
-			bonusCards: number;
-			endOfRoundGoals: number;
-			eggs: number;
-			foodOnCards: number;
-			tuckedCards: number;
-			nectar: number;
-		}> = [];
-
-		for (const score of scores) {
-			let userId: number;
-
-			if (score.isNew && score.username) {
-				// Create new user
-				// Check if username already exists
-				const existingUser = db
-					.prepare('SELECT id FROM users WHERE username = ?')
-					.get(score.username) as { id: number } | undefined;
-
-				if (existingUser) {
-					userId = existingUser.id;
-				} else {
-					// Create new user with a default password (users can change it later)
-					// Generate a random password hash
-					const defaultPassword = `temp_${Math.random().toString(36).slice(2)}_${Date.now()}`;
-					const passwordHash = await hashPassword(defaultPassword);
-					const email = `${score.username.toLowerCase().replace(/\s+/g, '')}@wingspan.local`;
-
-					const userResult = db
-						.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)')
-						.run(score.username, email, passwordHash);
-					userId = userResult.lastInsertRowid as number;
-				}
-			} else if (score.userId) {
-				userId = score.userId;
-			} else if (score.username) {
-				// Try to find user by username
-				const user = db
-					.prepare('SELECT id FROM users WHERE username = ?')
-					.get(score.username) as { id: number } | undefined;
-
-				if (!user) {
-					return json(
-						{ success: false, error: `User "${score.username}" not found` },
-						{ status: 400 }
-					);
-				}
-				userId = user.id;
-			} else {
-				return json(
-					{ success: false, error: 'Each player must have a userId or username' },
-					{ status: 400 }
-				);
-			}
-
-			processedScores.push({
-				userId,
-				placement: score.placement,
-				totalScore: score.totalScore,
-				birds: score.birds || 0,
-				bonusCards: score.bonusCards || 0,
-				endOfRoundGoals: score.endOfRoundGoals || 0,
-				eggs: score.eggs || 0,
-				foodOnCards: score.foodOnCards || 0,
-				tuckedCards: score.tuckedCards || 0,
-				nectar: score.nectar || 0
-			});
-		}
-
 		// Create game and scores in transaction
 		const createGame = db.transaction(() => {
-			// Insert game
 			const gameResult = db
 				.prepare('INSERT INTO games (league_id, played_at, created_by) VALUES (?, ?, ?)')
-				.run(leagueId, playedAt, userId);
+				.run(leagueId, playedAt, currentUserId);
 			const gameId = gameResult.lastInsertRowid as number;
 
-			// Insert scores
 			const insertScore = db.prepare(
 				`INSERT INTO scores (
 					game_id, user_id, placement, total_score,
@@ -183,7 +196,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			for (const score of processedScores) {
 				insertScore.run(
 					gameId,
-					score.userId,
+					score.scoreUserId,
 					score.placement,
 					score.totalScore,
 					score.birds,
@@ -208,7 +221,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 					id: gameId,
 					leagueId,
 					playedAt,
-					createdBy: userId
+					createdBy: currentUserId
 				}
 			},
 			{ status: 201 }
