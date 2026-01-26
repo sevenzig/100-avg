@@ -3,36 +3,77 @@
 # Using latest Node.js 20 LTS with security patches (includes OpenSSL fixes)
 FROM node:20.18-alpine AS builder
 
+# Build arguments for flexibility
+ARG NODE_ENV=production
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION=1.0.0
+
+# Add metadata labels
+LABEL org.opencontainers.image.title="Wingspan Score Tracker" \
+      org.opencontainers.image.description="SvelteKit application for tracking Wingspan game scores" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.vendor="Wingspan Score Tracker" \
+      maintainer="Wingspan Score Tracker Team"
+
 # Install build dependencies for native modules (better-sqlite3)
-RUN apk add --no-cache python3 make g++
+# Combine RUN commands to reduce layers and improve caching
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/cache/apk/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY bun.lock* ./
+# Copy package files first for better layer caching
+# Include package-lock.json for reproducible builds
+COPY package*.json package-lock.json* bun.lock* ./
 
 # Install dependencies (including dev dependencies for build)
 # Using --legacy-peer-deps to resolve chart.js version conflict
-RUN npm ci --legacy-peer-deps
+# Clean npm cache in same layer to reduce image size
+RUN npm ci --legacy-peer-deps && \
+    npm cache clean --force && \
+    ls -la node_modules/.bin/ | grep vite || echo "Warning: vite not found in node_modules/.bin"
 
-# Copy source code
+# Copy source code (this layer will invalidate cache when code changes)
 COPY . .
 
 # Build the application
-RUN npm run build
+# Use npx to ensure vite is found from node_modules
+RUN npx vite build
 
 # Stage 2: Production stage
 # Using latest Node.js 20 LTS with security patches (includes OpenSSL fixes)
 FROM node:20.18-alpine AS production
 
+# Build arguments
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION=1.0.0
+
+# Copy labels from builder stage
+LABEL org.opencontainers.image.title="Wingspan Score Tracker" \
+      org.opencontainers.image.description="SvelteKit application for tracking Wingspan game scores" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.vendor="Wingspan Score Tracker" \
+      maintainer="Wingspan Score Tracker Team"
+
 # Create app directory
 WORKDIR /app
 
-# Create non-root user for security
+# Create non-root user for security (UID/GID 1001 is standard for Node.js)
+# Combine user creation in single layer
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+    adduser -S nodejs -u 1001 -G nodejs && \
+    mkdir -p /app/database && \
+    chown -R nodejs:nodejs /app
 
 # Copy package files
 COPY package*.json ./
@@ -40,23 +81,30 @@ COPY package*.json ./
 # Install only production dependencies
 # Note: better-sqlite3 requires native compilation, but we'll copy compiled modules from builder
 # Using --legacy-peer-deps to resolve chart.js version conflict
-RUN npm ci --only=production --legacy-peer-deps && \
-    npm cache clean --force
+# We need build tools temporarily to compile better-sqlite3 if it's not already compiled
+# However, we copy the compiled module from builder, so this is a fallback
+RUN apk add --no-cache --virtual .build-deps \
+    python3 \
+    make \
+    g++ && \
+    npm ci --only=production --legacy-peer-deps && \
+    npm cache clean --force && \
+    apk del .build-deps && \
+    rm -rf /var/cache/apk/*
 
 # Copy compiled native modules from builder (better-sqlite3)
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
 
 # Copy built application from builder stage
+# Combine COPY commands where possible to reduce layers
 COPY --from=builder --chown=nodejs:nodejs /app/build ./build
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/static ./static
 
-# Create database directory with proper permissions
+# Database directory already created above with proper permissions
 # This directory will be used for volume mounting in docker-compose.prod.yml
 # The volume mount (wingspan-db-prod:/app/database) will override this directory
 # but the directory must exist in the image for the mount to work properly
-RUN mkdir -p /app/database && \
-    chown -R nodejs:nodejs /app/database
 
 # Copy database file from builder stage if it exists (for initial seed data)
 # Volume mounting behavior:
@@ -73,16 +121,21 @@ USER nodejs
 # Expose port (default SvelteKit port, can be overridden)
 EXPOSE 3000
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOST=0.0.0.0
-ENV ORIGIN=http://localhost:3000
-ENV DATABASE_PATH=/app/database/wingspan.db
+# Set environment variables (consolidate to reduce layers)
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOST=0.0.0.0 \
+    ORIGIN=http://localhost:3000 \
+    DATABASE_PATH=/app/database/wingspan.db \
+    NODE_OPTIONS="--max-old-space-size=512"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+# Health check with improved error handling
+# Uses HTTP instead of HTTPS for internal health checks
+HEALTHCHECK --interval=30s \
+            --timeout=10s \
+            --start-period=40s \
+            --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"
 
 # Start the application
 CMD ["node", "build"]

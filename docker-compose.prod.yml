@@ -3,11 +3,16 @@
 # This configuration sets up the Wingspan Score Tracker for production deployment:
 # - Uses multi-stage Dockerfile with optimized production build
 # - Runs built application on port 3000 (configurable via PORT env var)
-# - Creates persistent database volume (wingspan-db-prod)
+# - Uses bind mount to /home/scott/databases for database persistence
 # - Includes health checks for container orchestration
 # - Loads environment from .env.production file
 #
 # Usage: docker-compose -f docker-compose.prod.yml up -d
+#
+# IMPORTANT: Ensure /home/scott/databases exists with correct permissions:
+#   sudo mkdir -p /home/scott/databases
+#   sudo chown -R 1001:1001 /home/scott/databases
+#   sudo chmod 755 /home/scott/databases
 
 services:
   app:
@@ -15,15 +20,22 @@ services:
       context: .
       dockerfile: Dockerfile
       target: production
+      args:
+        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
+        VCS_REF: ${VCS_REF:-$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')}
+        VERSION: ${VERSION:-1.0.0}
     container_name: wingspan-score-prod
     expose:
       - "3000"
+    # Note: Ports are not exposed here - Dokploy or reverse proxy handles external access
+    # To expose directly, uncomment: ports: ["3000:3000"]
     volumes:
       # Mount persistent volume for database storage
+      # Using bind mount to /home/scott/databases for easy access and backup
       # This volume will persist data across container restarts and deployments
-      # If the volume is empty on first mount, the seeded database from the image will be used
-      # Subsequent mounts will use the persisted data from the volume
-      - wingspan-db-prod:/app/database
+      # If the directory is empty on first mount, the seeded database from the image will be used
+      # Subsequent mounts will use the persisted data from the directory
+      - /home/scott/databases:/app/database
     environment:
       - NODE_ENV=production
       - DATABASE_PATH=/app/database/wingspan.db
@@ -36,25 +48,36 @@ services:
     restart: unless-stopped
     networks:
       - wingspan-network
+    # Resource limits to prevent resource exhaustion
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    # Health check configuration
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"]
       interval: 30s
-      timeout: 3s
+      timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 40s
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
 
-volumes:
-  # Named volume for database persistence
-  # This volume stores the SQLite database file and persists across container lifecycle
-  # Location on host: Docker manages this (typically in /var/lib/docker/volumes/)
-  # To backup: docker run --rm -v wingspan-db-prod:/data -v $(pwd):/backup alpine tar czf /backup/db-backup.tar.gz /data
-  wingspan-db-prod:
-    driver: local
-    # Optional: specify a custom location for the volume
-    # driver_opts:
-    #   type: none
-    #   o: bind
-    #   device: /path/to/persistent/storage
+# Note: Using bind mount instead of named volume
+# Database is stored at /home/scott/databases on the host
+# This makes it easier to access, backup, and manage the database file directly
+# 
+# To backup: cp /home/scott/databases/wingspan.db /home/scott/databases/wingspan.db.backup
+# To restore: cp /home/scott/databases/wingspan.db.backup /home/scott/databases/wingspan.db
 
 networks:
   wingspan-network:

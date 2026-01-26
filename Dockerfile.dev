@@ -2,31 +2,68 @@
 # Using latest Node.js 20 LTS with security patches (includes OpenSSL fixes)
 FROM node:20.18-alpine AS development
 
+# Build arguments for metadata
+ARG BUILD_DATE
+ARG VCS_REF
+ARG VERSION=1.0.0
+
+# Add metadata labels
+LABEL org.opencontainers.image.title="Wingspan Score Tracker (Development)" \
+      org.opencontainers.image.description="Development environment for Wingspan Score Tracker" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.vendor="Wingspan Score Tracker" \
+      maintainer="Wingspan Score Tracker Team"
+
 # Install build dependencies for native modules
-RUN apk add --no-cache python3 make g++
+# Combine RUN commands to reduce layers
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/cache/apk/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY bun.lock* ./
+# Copy package files first for better layer caching
+COPY package*.json bun.lock* ./
 
 # Install all dependencies (including dev dependencies)
 # Using --legacy-peer-deps to resolve chart.js version conflict
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
 
-# Create database directory
-RUN mkdir -p /app/database
+# Create non-root user for security (even in dev)
+# Create database directory with proper permissions
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 -G nodejs && \
+    mkdir -p /app/database && \
+    chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
 
 # Expose development port
 EXPOSE 5173
 
-# Set environment for container access
-ENV HOST=0.0.0.0
+# Set environment variables (consolidate to reduce layers)
+ENV NODE_ENV=development \
+    HOST=0.0.0.0 \
+    PORT=5173 \
+    DATABASE_PATH=/app/database/wingspan.db \
+    NODE_OPTIONS="--max-old-space-size=1024"
+
+# Health check for development (optional but useful)
+HEALTHCHECK --interval=30s \
+            --timeout=10s \
+            --start-period=60s \
+            --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5173', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"
 
 # Default command (can be overridden in docker-compose)
 CMD ["npm", "run", "dev", "--", "--host"]
