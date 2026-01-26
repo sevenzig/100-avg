@@ -41,21 +41,36 @@
 				</div>
 				<div class="flex-none gap-2">
 					{#if $user}
-						{#if $user.isAdmin}
-							<a
-								href="/admin"
-								class="btn btn-ghost text-slate-700 hover:text-slate-900 {page.url.pathname === '/admin' ? 'bg-slate-100' : ''}"
-							>
-								Admin
-							</a>
-						{/if}
 						<div class="dropdown dropdown-end">
 							<label tabindex="0" class="btn btn-ghost text-slate-700 hover:text-slate-900">
 								<span>{$user.username}</span>
 							</label>
-							<ul tabindex="0" class="dropdown-content menu bg-white border border-slate-200 rounded-lg w-52 p-2 shadow-lg mt-2">
+							<ul tabindex="0" class="dropdown-content menu bg-white border border-slate-200 rounded-lg w-52 p-2 shadow-lg mt-2 z-50">
 								<li>
-									<button on:click={handleLogout} class="text-slate-700 hover:bg-slate-50">Logout</button>
+									<a 
+										href="/profile" 
+										class="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-md transition-colors {page.url.pathname === '/profile' ? 'bg-slate-100 font-medium' : ''}"
+									>
+										Profile
+									</a>
+								</li>
+								{#if $user.isAdmin}
+									<li>
+										<a 
+											href="/admin" 
+											class="block px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-md transition-colors {page.url.pathname === '/admin' ? 'bg-slate-100 font-medium' : ''}"
+										>
+											Admin
+										</a>
+									</li>
+								{/if}
+								<li>
+									<button 
+										on:click={handleLogout} 
+										class="block w-full text-left px-4 py-2 text-slate-700 hover:bg-slate-50 rounded-md transition-colors"
+									>
+										Logout
+									</button>
 								</li>
 							</ul>
 						</div>

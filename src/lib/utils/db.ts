@@ -117,4 +117,23 @@ export function initDatabase() {
 			throw error;
 		}
 	}
+
+	// Add profile columns if they don't exist (for existing databases)
+	try {
+		database.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
+	} catch (error: any) {
+		if (!error.message.includes('duplicate column')) {
+			throw error;
+		}
+	}
+
+	try {
+		database.exec("ALTER TABLE users ADD COLUMN platforms TEXT DEFAULT '[]'");
+		// Update existing users to have empty platforms array
+		database.exec("UPDATE users SET platforms = '[]' WHERE platforms IS NULL");
+	} catch (error: any) {
+		if (!error.message.includes('duplicate column')) {
+			throw error;
+		}
+	}
 }
