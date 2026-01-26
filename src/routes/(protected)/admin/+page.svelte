@@ -61,16 +61,65 @@
 	let editEmail = '';
 	let editIsAdmin = false;
 
-	onMount(async () => {
-		// Check if user is admin
-		const currentUser = $user;
-		if (!currentUser?.isAdmin) {
+	let dataLoaded = false;
+
+	async function loadData() {
+		if (dataLoaded) return;
+		dataLoaded = true;
+		await Promise.all([loadLeagues(), loadUsers(), loadAdminUsers()]);
+		loading = false;
+	}
+
+	// Reactive check - wait for user to be loaded, then check admin status
+	$: if ($user !== null && $user !== undefined && !dataLoaded) {
+		// Check admin status
+		if ($user.isAdmin !== true) {
+			console.log('User is not admin, redirecting...', { 
+				userId: $user.id, 
+				username: $user.username, 
+				isAdmin: $user.isAdmin 
+			});
 			goto('/leagues');
 			return;
 		}
+		// User is admin, load data
+		if ($user.isAdmin === true && loading) {
+			loadData();
+		}
+	}
 
-		await Promise.all([loadLeagues(), loadUsers(), loadAdminUsers()]);
-		loading = false;
+	onMount(async () => {
+		// Wait for user to be loaded from the protected layout
+		// The layout loads user asynchronously, so we need to wait
+		let attempts = 0;
+		while (($user === null || $user === undefined) && attempts < 10) {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			attempts++;
+		}
+		
+		// Check if user was loaded
+		if ($user === null || $user === undefined) {
+			console.error('User not loaded after waiting');
+			error = 'Unable to verify authentication';
+			loading = false;
+			return;
+		}
+		
+		// Check admin status
+		if ($user.isAdmin !== true) {
+			console.log('User is not admin:', { 
+				userId: $user.id, 
+				username: $user.username, 
+				isAdmin: $user.isAdmin 
+			});
+			goto('/leagues');
+			return;
+		}
+		
+		// User is admin, load data if not already loaded
+		if (loading && !dataLoaded) {
+			await loadData();
+		}
 	});
 
 	async function loadLeagues() {
