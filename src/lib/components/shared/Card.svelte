@@ -16,7 +16,7 @@
 
 <div class="bg-white border border-slate-200 rounded-lg shadow-sm {padding} {hoverClass} {className}" on:click={handleClick}>
 	{#if $$slots.header}
-		<div class="mb-4 pb-4 border-b border-slate-200">
+		<div class="mb-3 pb-2 border-b border-slate-200">
 			<slot name="header" />
 		</div>
 	{/if}

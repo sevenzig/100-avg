@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import Card from '$lib/components/shared/Card.svelte';
 	import ProfileEditForm from '$lib/components/profile/ProfileEditForm.svelte';
+	import ScoringChart from '$lib/components/profile/ScoringChart.svelte';
 	import PlacementHistoryChart from '$lib/components/profile/PlacementHistoryChart.svelte';
 	import CategoryAveragesChart from '$lib/components/profile/CategoryAveragesChart.svelte';
 	import RecentScoresChart from '$lib/components/profile/RecentScoresChart.svelte';
@@ -12,6 +13,11 @@
 		email: string;
 		displayName?: string | null;
 		platforms: string[];
+		platformAliases?: {
+			steam?: string | null;
+			android?: string | null;
+			iphone?: string | null;
+		};
 		createdAt: string;
 	}
 
@@ -37,6 +43,19 @@
 			date: string;
 			totalScore: number;
 		}>;
+		gameScores: Array<{
+			gameId: number;
+			date: string;
+			gameNumber: number;
+			birds: number;
+			bonusCards: number;
+			endOfRoundGoals: number;
+			eggs: number;
+			foodOnCards: number;
+			tuckedCards: number;
+			nectar: number;
+			totalScore: number;
+		}>;
 	}
 
 	let profile: Profile | null = null;
@@ -44,6 +63,7 @@
 	let loading = true;
 	let saving = false;
 	let error = '';
+	let selectedChart: 'scoring' | 'placement' | 'category' | 'recent' = 'scoring';
 
 	async function loadProfile() {
 		try {
@@ -117,46 +137,78 @@
 	<title>Profile - Wingspan Score Tracker</title>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="space-y-4">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold text-slate-900">Profile Settings</h1>
-			<p class="mt-1 text-sm text-slate-600">Manage your profile information and view statistics</p>
+			<h1 class="text-2xl font-bold text-slate-900">Profile Settings</h1>
+			<p class="mt-0.5 text-xs text-slate-600">Manage your profile information and view statistics</p>
 		</div>
 	</div>
 
 	{#if error}
-		<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+		<div class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-md text-sm">
 			{error}
 		</div>
 	{/if}
 
 	{#if loading}
-		<div class="text-center py-12">
+		<div class="text-center py-8">
 			<span class="loading loading-spinner loading-lg"></span>
-			<p class="mt-4 text-slate-600">Loading profile...</p>
+			<p class="mt-2 text-sm text-slate-600">Loading profile...</p>
 		</div>
 	{:else if profile}
-		<!-- Profile Information Section -->
-		<Card>
-			<div slot="header">
-				<h2 class="text-xl font-semibold text-slate-900">Profile Information</h2>
+		<!-- Two-column layout: Chart 60% left, Profile 40% right -->
+		<div class="flex flex-col lg:flex-row gap-4">
+			<!-- Statistics Section - 60% width -->
+			<div class="w-full lg:w-[60%]">
+				<Card padding="p-4">
+					<div class="space-y-2">
+						<div class="flex items-center justify-between">
+							<div>
+								{#if selectedChart === 'scoring'}
+									<h3 class="text-lg font-semibold text-slate-900">Scoring Breakdown</h3>
+									<p class="text-sm text-slate-600">Last {stats?.gameScores?.length || 0} games</p>
+								{:else if selectedChart === 'placement'}
+									<h3 class="text-lg font-semibold text-slate-900">Placement History</h3>
+									<p class="text-sm text-slate-600">Last {stats?.placementHistory?.length || 0} matches</p>
+								{:else if selectedChart === 'category'}
+									<h3 class="text-lg font-semibold text-slate-900">Category Averages</h3>
+									<p class="text-sm text-slate-600">Last {stats?.categoryAverages?.matches || 0} matches</p>
+								{:else if selectedChart === 'recent'}
+									<h3 class="text-lg font-semibold text-slate-900">Recent Scores</h3>
+									<p class="text-sm text-slate-600">Last 10 games</p>
+								{/if}
+							</div>
+							<select
+								bind:value={selectedChart}
+								class="select select-bordered select-sm w-48 text-sm"
+							>
+								<option value="scoring">Scoring Breakdown</option>
+								<option value="placement">Placement History</option>
+								<option value="category">Category Averages</option>
+								<option value="recent">Recent Scores</option>
+							</select>
+						</div>
+						{#if selectedChart === 'scoring'}
+							<ScoringChart gameScores={stats?.gameScores} hideTitle={true} />
+						{:else if selectedChart === 'placement'}
+							<PlacementHistoryChart placementHistory={stats?.placementHistory} hideTitle={true} />
+						{:else if selectedChart === 'category'}
+							<CategoryAveragesChart categoryAverages={stats?.categoryAverages} hideTitle={true} />
+						{:else if selectedChart === 'recent'}
+							<RecentScoresChart recentScores={stats?.recentScores} hideTitle={true} />
+						{/if}
+					</div>
+				</Card>
 			</div>
-			<ProfileEditForm {profile} {saving} on:save={handleSave} on:cancel={handleCancel} />
-		</Card>
 
-		<!-- Statistics Section -->
-		<div>
-			<h2 class="text-2xl font-semibold text-slate-900 mb-4">Player Statistics</h2>
-			<div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-				<Card>
-					<PlacementHistoryChart placementHistory={stats?.placementHistory} />
-				</Card>
-				<Card>
-					<CategoryAveragesChart categoryAverages={stats?.categoryAverages} />
-				</Card>
-				<Card>
-					<RecentScoresChart recentScores={stats?.recentScores} />
+			<!-- Profile Information Section - 40% width -->
+			<div class="w-full lg:w-[40%]">
+				<Card padding="p-4">
+					<div slot="header" class="mb-3 pb-2">
+						<h2 class="text-lg font-semibold text-slate-900">Profile Information</h2>
+					</div>
+					<ProfileEditForm {profile} loading={saving} on:save={handleSave} on:cancel={handleCancel} />
 				</Card>
 			</div>
 		</div>

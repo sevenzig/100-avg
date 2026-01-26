@@ -2,45 +2,31 @@
   "gameData": {
     "players": [
       {
-        "playerName": "hotnut",
+        "playerName": "blabberman23",
         "placement": 1,
-        "totalScore": 102,
+        "totalScore": 94,
         "scoringBreakdown": {
-          "birds": 61,
-          "bonusCards": 16,
-          "endOfRoundGoals": 5,
-          "eggs": 8,
+          "birds": 33,
+          "bonusCards": 6,
+          "endOfRoundGoals": 15,
+          "eggs": 12,
+          "foodOnCards": 4,
+          "tuckedCards": 15,
+          "nectar": 9
+        }
+      },
+      {
+        "playerName": "hotnut",
+        "placement": 2,
+        "totalScore": 73,
+        "scoringBreakdown": {
+          "birds": 37,
+          "bonusCards": 11,
+          "endOfRoundGoals": 10,
+          "eggs": 3,
           "foodOnCards": 0,
           "tuckedCards": 0,
           "nectar": 12
-        }
-      },
-      {
-        "playerName": "blabberman23",
-        "placement": 2,
-        "totalScore": 94,
-        "scoringBreakdown": {
-          "birds": 45,
-          "bonusCards": 6,
-          "endOfRoundGoals": 12,
-          "eggs": 21,
-          "foodOnCards": 4,
-          "tuckedCards": 3,
-          "nectar": 3
-        }
-      },
-      {
-        "playerName": "skycondition",
-        "placement": 3,
-        "totalScore": 79,
-        "scoringBreakdown": {
-          "birds": 56,
-          "bonusCards": 8,
-          "endOfRoundGoals": 5,
-          "eggs": 2,
-          "foodOnCards": 2,
-          "tuckedCards": 0,
-          "nectar": 6
         }
       }
     ]
@@ -48,6 +34,6 @@
   "metadata": {
     "extractedAt": "2026-01-25",
     "source": "Wingspan game score screen",
-    "notes": "Placements determined by total score: hotnut (102) = 1st, Blabberman23 (94) = 2nd, skycondition (79) = 3rd"
+    "notes": "Placements determined by total score: blabberman23 (94) = 1st, hotnut (73) = 2nd"
   }
 }

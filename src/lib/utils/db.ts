@@ -153,4 +153,35 @@ export function initDatabase() {
 			console.warn('Warning: Could not update platforms:', error.message);
 		}
 	}
+
+	// Add platform alias columns if they don't exist
+	if (!columnNames.includes('steam_alias')) {
+		try {
+			database.exec('ALTER TABLE users ADD COLUMN steam_alias TEXT');
+		} catch (error: any) {
+			if (!error.message.includes('duplicate column')) {
+				console.warn('Warning: Could not add steam_alias column:', error.message);
+			}
+		}
+	}
+
+	if (!columnNames.includes('android_alias')) {
+		try {
+			database.exec('ALTER TABLE users ADD COLUMN android_alias TEXT');
+		} catch (error: any) {
+			if (!error.message.includes('duplicate column')) {
+				console.warn('Warning: Could not add android_alias column:', error.message);
+			}
+		}
+	}
+
+	if (!columnNames.includes('iphone_alias')) {
+		try {
+			database.exec('ALTER TABLE users ADD COLUMN iphone_alias TEXT');
+		} catch (error: any) {
+			if (!error.message.includes('duplicate column')) {
+				console.warn('Warning: Could not add iphone_alias column:', error.message);
+			}
+		}
+	}
 }

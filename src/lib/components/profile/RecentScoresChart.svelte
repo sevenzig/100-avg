@@ -18,6 +18,7 @@
 		date: string;
 		totalScore: number;
 	}> | undefined;
+	export let hideTitle = false;
 
 	let chartCanvas: HTMLCanvasElement;
 	let chart: Chart | null = null;
@@ -106,8 +107,10 @@
 </script>
 
 <div class="space-y-2">
-	<h3 class="text-lg font-semibold text-slate-900">Recent Scores</h3>
-	<p class="text-sm text-slate-600">Last 10 games</p>
+	{#if !hideTitle}
+		<h3 class="text-lg font-semibold text-slate-900">Recent Scores</h3>
+		<p class="text-sm text-slate-600">Last 10 games</p>
+	{/if}
 	<div class="h-64 sm:h-48 md:h-64">
 		{#if recentScores && recentScores.length > 0}
 			<canvas bind:this={chartCanvas}></canvas>

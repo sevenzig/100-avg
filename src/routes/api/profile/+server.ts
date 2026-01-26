@@ -2,15 +2,13 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/utils/db';
 import { getUserId } from '$lib/utils/auth';
-
-interface UserRow {
-	id: number;
-	username: string;
-	email: string;
-	display_name: string | null;
-	platforms: string;
-	created_at: string;
-}
+import type { PlatformAliases } from '$lib/types/platform';
+import {
+	validateUsername,
+	validateDisplayName,
+	validatePlatforms,
+	validatePlatformAliases
+} from '$lib/utils/validation';
 
 // GET: Get current user's profile
 export const GET: RequestHandler = async ({ cookies }) => {
@@ -29,6 +27,9 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				email,
 				display_name,
 				platforms,
+				steam_alias,
+				android_alias,
+				iphone_alias,
 				created_at
 			FROM users
 			WHERE id = ?
@@ -47,6 +48,11 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			email: user.email,
 			displayName: user.display_name || null,
 			platforms: JSON.parse(user.platforms || '[]'),
+			platformAliases: {
+				steam: user.steam_alias || null,
+				android: user.android_alias || null,
+				iphone: user.iphone_alias || null
+			},
 			createdAt: user.created_at
 		}
 	});
@@ -59,41 +65,34 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 		return json({ error: 'Not authenticated' }, { status: 401 });
 	}
 
-	const { displayName, username, platforms } = await request.json();
+	const { displayName, username, platforms, platformAliases } = await request.json();
 
-	// Validation
+	// Validation using shared utilities
 	if (username !== undefined) {
-		if (username.length < 1 || username.length > 50) {
-			return json({ error: 'Username must be 1-50 characters' }, { status: 400 });
-		}
-
-		if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
-			return json(
-				{ error: 'Username can only contain letters, numbers, underscores, and hyphens' },
-				{ status: 400 }
-			);
+		const usernameResult = validateUsername(username);
+		if (!usernameResult.valid) {
+			return json({ error: usernameResult.error || 'Invalid username' }, { status: 400 });
 		}
 	}
 
-	if (displayName !== undefined && displayName !== null && displayName.length > 50) {
-		return json({ error: 'Display name must be 50 characters or less' }, { status: 400 });
+	if (displayName !== undefined) {
+		const displayNameResult = validateDisplayName(displayName);
+		if (!displayNameResult.valid) {
+			return json({ error: displayNameResult.error || 'Invalid display name' }, { status: 400 });
+		}
 	}
 
 	if (platforms !== undefined) {
-		if (!Array.isArray(platforms)) {
-			return json({ error: 'Platforms must be an array' }, { status: 400 });
+		const platformsResult = validatePlatforms(platforms);
+		if (!platformsResult.valid) {
+			return json({ error: platformsResult.error || 'Invalid platforms' }, { status: 400 });
 		}
+	}
 
-		const validPlatforms = ['steam', 'android', 'iphone'];
-		for (const platform of platforms) {
-			if (!validPlatforms.includes(platform)) {
-				return json({ error: `Invalid platform: ${platform}` }, { status: 400 });
-			}
-		}
-
-		// Check for duplicates
-		if (new Set(platforms).size !== platforms.length) {
-			return json({ error: 'Platforms cannot contain duplicates' }, { status: 400 });
+	if (platformAliases !== undefined) {
+		const aliasesResult = validatePlatformAliases(platformAliases);
+		if (!aliasesResult.valid) {
+			return json({ error: aliasesResult.error || 'Invalid platform aliases' }, { status: 400 });
 		}
 	}
 
@@ -129,6 +128,24 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 		updateValues.push(JSON.stringify(platforms));
 	}
 
+	if (platformAliases !== undefined) {
+		// Only update aliases for platforms that are provided
+		// This allows partial updates without clearing other aliases
+		const aliases = platformAliases as PlatformAliases;
+		if ('steam' in aliases) {
+			updateFields.push('steam_alias = ?');
+			updateValues.push(aliases.steam || null);
+		}
+		if ('android' in aliases) {
+			updateFields.push('android_alias = ?');
+			updateValues.push(aliases.android || null);
+		}
+		if ('iphone' in aliases) {
+			updateFields.push('iphone_alias = ?');
+			updateValues.push(aliases.iphone || null);
+		}
+	}
+
 	if (updateFields.length > 0) {
 		updateFields.push('updated_at = CURRENT_TIMESTAMP');
 		updateValues.push(userId);
@@ -139,7 +156,7 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 	// Return updated profile
 	const updated = db
 		.prepare(
-			'SELECT id, username, email, display_name, platforms, created_at FROM users WHERE id = ?'
+			'SELECT id, username, email, display_name, platforms, steam_alias, android_alias, iphone_alias, created_at FROM users WHERE id = ?'
 		)
 		.get(userId) as UserRow;
 
@@ -151,6 +168,11 @@ export const PUT: RequestHandler = async ({ request, cookies }) => {
 			email: updated.email,
 			displayName: updated.display_name || null,
 			platforms: JSON.parse(updated.platforms || '[]'),
+			platformAliases: {
+				steam: updated.steam_alias || null,
+				android: updated.android_alias || null,
+				iphone: updated.iphone_alias || null
+			},
 			createdAt: updated.created_at
 		}
 	});

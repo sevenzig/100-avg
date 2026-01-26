@@ -27,6 +27,20 @@ interface RecentScoreRow {
 	total_score: number;
 }
 
+interface GameScoreRow {
+	game_id: number;
+	date: string;
+	game_number: number;
+	birds: number;
+	bonus_cards: number;
+	end_of_round_goals: number;
+	eggs: number;
+	food_on_cards: number;
+	tucked_cards: number;
+	nectar: number;
+	total_score: number;
+}
+
 // GET: Get comprehensive statistics for the current user
 export const GET: RequestHandler = async ({ cookies, url }) => {
 	const userId = getUserId(cookies);
@@ -100,6 +114,46 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 		)
 		.all(userId, leagueId, leagueId) as RecentScoreRow[];
 
+	// Get detailed game scores with breakdown
+	const gameScores = db
+		.prepare(
+			`
+			SELECT 
+				g.id as game_id,
+				DATE(g.played_at) as date,
+				s.birds,
+				s.bonus_cards,
+				s.end_of_round_goals,
+				s.eggs,
+				s.food_on_cards,
+				s.tucked_cards,
+				s.nectar,
+				s.total_score
+			FROM scores s
+			JOIN games g ON s.game_id = g.id
+			WHERE s.user_id = ?
+				AND (? IS NULL OR g.league_id = ?)
+			ORDER BY g.played_at ASC
+			LIMIT ?
+		`
+		)
+		.all(userId, leagueId, leagueId, matches) as GameScoreRow[];
+
+	// Add game numbers (1, 2, 3, ...)
+	const gameScoresWithNumbers = gameScores.map((row, index) => ({
+		gameId: row.game_id,
+		date: row.date,
+		gameNumber: index + 1,
+		birds: row.birds,
+		bonusCards: row.bonus_cards,
+		endOfRoundGoals: row.end_of_round_goals,
+		eggs: row.eggs,
+		foodOnCards: row.food_on_cards,
+		tuckedCards: row.tucked_cards,
+		nectar: row.nectar,
+		totalScore: row.total_score
+	}));
+
 	return json({
 		stats: {
 			placementHistory: placementHistory.map((row) => ({
@@ -122,7 +176,8 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 				gameId: row.game_id,
 				date: row.date,
 				totalScore: row.total_score
-			}))
+			})),
+			gameScores: gameScoresWithNumbers
 		}
 	});
 };

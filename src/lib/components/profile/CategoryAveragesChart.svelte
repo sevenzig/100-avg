@@ -23,6 +23,7 @@
 		tuckedCards: number;
 		nectar: number;
 	} | undefined;
+	export let hideTitle = false;
 
 	let chartCanvas: HTMLCanvasElement;
 	let chart: Chart | null = null;
@@ -109,8 +110,10 @@
 </script>
 
 <div class="space-y-2">
-	<h3 class="text-lg font-semibold text-slate-900">Category Averages</h3>
-	<p class="text-sm text-slate-600">Last {categoryAverages?.matches || 0} matches</p>
+	{#if !hideTitle}
+		<h3 class="text-lg font-semibold text-slate-900">Category Averages</h3>
+		<p class="text-sm text-slate-600">Last {categoryAverages?.matches || 0} matches</p>
+	{/if}
 	<div class="h-64 sm:h-48 md:h-64">
 		{#if categoryAverages && categoryAverages.matches > 0}
 			<canvas bind:this={chartCanvas}></canvas>
