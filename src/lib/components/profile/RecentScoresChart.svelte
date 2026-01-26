@@ -2,15 +2,16 @@
 	import { onMount, onDestroy } from 'svelte';
 	import {
 		Chart,
-		BarController,
-		BarElement,
+		LineController,
+		LineElement,
+		PointElement,
 		CategoryScale,
 		LinearScale,
 		Tooltip,
 		Legend
 	} from 'chart.js';
 
-	Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
+	Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 	export let recentScores: Array<{
 		gameId: number;
@@ -32,23 +33,25 @@
 			.reverse();
 
 		const scores = recentScores.map((score) => score.totalScore).reverse();
-		const maxScore = Math.max(...scores);
-		const backgroundColor = scores.map((score) => {
-			const intensity = maxScore > 0 ? score / maxScore : 0;
-			return `rgba(59, 130, 246, ${0.5 + intensity * 0.5})`;
-		});
 
 		chart = new Chart(chartCanvas, {
-			type: 'bar',
+			type: 'line',
 			data: {
 				labels,
 				datasets: [
 					{
 						label: 'Total Score',
 						data: scores,
-						backgroundColor,
 						borderColor: '#3B82F6',
-						borderWidth: 1
+						backgroundColor: 'rgba(59, 130, 246, 0.1)',
+						borderWidth: 2,
+						fill: true,
+						tension: 0.4,
+						pointBackgroundColor: '#3B82F6',
+						pointBorderColor: '#ffffff',
+						pointBorderWidth: 2,
+						pointRadius: 4,
+						pointHoverRadius: 6
 					}
 				]
 			},

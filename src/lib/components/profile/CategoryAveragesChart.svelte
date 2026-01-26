@@ -2,15 +2,16 @@
 	import { onMount, onDestroy } from 'svelte';
 	import {
 		Chart,
-		BarController,
-		BarElement,
+		LineController,
+		LineElement,
+		PointElement,
 		CategoryScale,
 		LinearScale,
 		Tooltip,
 		Legend
 	} from 'chart.js';
 
-	Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
+	Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 	export let categoryAverages: {
 		matches: number;
@@ -30,7 +31,7 @@
 		if (!chartCanvas || !categoryAverages || categoryAverages.matches === 0) return;
 
 		chart = new Chart(chartCanvas, {
-			type: 'bar',
+			type: 'line',
 			data: {
 				labels: ['Birds', 'Bonus Cards', 'End Goals', 'Eggs', 'Food', 'Tucked', 'Nectar'],
 				datasets: [
@@ -45,9 +46,16 @@
 							categoryAverages.tuckedCards || 0,
 							categoryAverages.nectar || 0
 						],
-						backgroundColor: '#3B82F6',
-						borderColor: '#2563EB',
-						borderWidth: 1
+						borderColor: '#3B82F6',
+						backgroundColor: 'rgba(59, 130, 246, 0.1)',
+						borderWidth: 2,
+						fill: true,
+						tension: 0.4,
+						pointBackgroundColor: '#3B82F6',
+						pointBorderColor: '#ffffff',
+						pointBorderWidth: 2,
+						pointRadius: 4,
+						pointHoverRadius: 6
 					}
 				]
 			},
@@ -75,8 +83,7 @@
 							color: '#666666'
 						},
 						grid: {
-							color: '#e5e7eb',
-							display: false
+							color: '#e5e7eb'
 						}
 					},
 					y: {

@@ -23,6 +23,7 @@
 	let platforms: string[] = [];
 	let formError = '';
 	let usernameError = '';
+	let checkingUsername = false;
 
 	$: {
 		if (profile) {
@@ -74,6 +75,38 @@
 		return true;
 	}
 
+	async function checkUsernameAvailability(newUsername: string) {
+		if (newUsername === profile.username) {
+			usernameError = '';
+			return;
+		}
+
+		// Don't check if username is empty or invalid format
+		if (!newUsername.trim() || !/^[a-zA-Z0-9_-]+$/.test(newUsername)) {
+			usernameError = '';
+			return;
+		}
+
+		checkingUsername = true;
+		try {
+			const response = await fetch(
+				`/api/users/check-username?username=${encodeURIComponent(newUsername)}`
+			);
+			if (response.ok) {
+				const data = await response.json();
+				if (!data.available) {
+					usernameError = 'Username is already taken';
+				} else {
+					usernameError = '';
+				}
+			}
+		} catch (e) {
+			// Silently fail - will be caught on save
+		} finally {
+			checkingUsername = false;
+		}
+	}
+
 	function togglePlatform(platform: string) {
 		if (platforms.includes(platform)) {
 			platforms = platforms.filter((p) => p !== platform);
@@ -123,12 +156,16 @@
 		placeholder="Your username"
 		required
 		error={usernameError || (formError && formError.includes('Username') ? formError : '')}
+		on:input={() => checkUsernameAvailability(username)}
 	/>
+	{#if checkingUsername}
+		<span class="text-sm text-slate-500">Checking availability...</span>
+	{/if}
 
-	<div class="form-control">
-		<label class="block text-sm font-medium text-slate-700 mb-2">
+	<fieldset class="form-control">
+		<legend class="block text-sm font-medium text-slate-700 mb-2">
 			Platforms
-		</label>
+		</legend>
 		<div class="space-y-2">
 			<label class="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded">
 				<input
@@ -161,7 +198,7 @@
 		{#if formError && formError.includes('platform')}
 			<p class="mt-1.5 text-sm text-red-600">{formError}</p>
 		{/if}
-	</div>
+	</fieldset>
 
 	{#if formError && !formError.includes('Display name') && !formError.includes('Username') && !formError.includes('platform')}
 		<div class="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded-md text-sm">

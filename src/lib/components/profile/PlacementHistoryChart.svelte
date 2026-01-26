@@ -2,15 +2,16 @@
 	import { onMount, onDestroy } from 'svelte';
 	import {
 		Chart,
-		BarController,
-		BarElement,
+		LineController,
+		LineElement,
+		PointElement,
 		CategoryScale,
 		LinearScale,
 		Tooltip,
 		Legend
 	} from 'chart.js';
 
-	Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend);
+	Chart.register(LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip, Legend);
 
 	export let placementHistory: Array<{
 		gameId: number;
@@ -33,25 +34,27 @@
 		});
 
 		chart = new Chart(chartCanvas, {
-			type: 'bar',
+			type: 'line',
 			data: {
 				labels: ['1st', '2nd', '3rd', '4th', '5th'],
 				datasets: [
 					{
 						label: 'Placements',
 						data: placementCounts,
-						backgroundColor: [
-							'#F59E0B', // Gold
-							'#94A3B8', // Silver
-							'#CD7F32', // Bronze
-							'#6B7280', // Gray
-							'#4B5563' // Dark Gray
-						]
+						borderColor: '#3B82F6',
+						backgroundColor: 'rgba(59, 130, 246, 0.1)',
+						borderWidth: 2,
+						fill: true,
+						tension: 0.4,
+						pointBackgroundColor: '#3B82F6',
+						pointBorderColor: '#ffffff',
+						pointBorderWidth: 2,
+						pointRadius: 4,
+						pointHoverRadius: 6
 					}
 				]
 			},
 			options: {
-				indexAxis: 'y',
 				responsive: true,
 				maintainAspectRatio: false,
 				plugins: {
@@ -64,7 +67,7 @@
 						borderWidth: 1,
 						callbacks: {
 							label: (context) => {
-								const count = context.parsed.x;
+								const count = context.parsed.y;
 								return `${count} game${count !== 1 ? 's' : ''}`;
 							}
 						}
@@ -72,9 +75,7 @@
 				},
 				scales: {
 					x: {
-						beginAtZero: true,
 						ticks: {
-							stepSize: 1,
 							color: '#666666'
 						},
 						grid: {
@@ -82,7 +83,9 @@
 						}
 					},
 					y: {
+						beginAtZero: true,
 						ticks: {
+							stepSize: 1,
 							color: '#666666'
 						},
 						grid: {
