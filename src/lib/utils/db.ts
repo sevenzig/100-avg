@@ -119,21 +119,38 @@ export function initDatabase() {
 	}
 
 	// Add profile columns if they don't exist (for existing databases)
-	try {
-		database.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
-	} catch (error: any) {
-		if (!error.message.includes('duplicate column')) {
-			throw error;
+	// Check if columns exist first to avoid errors
+	const tableInfo = database.prepare('PRAGMA table_info(users)').all() as Array<{
+		cid: number;
+		name: string;
+		type: string;
+	}>;
+	const columnNames = tableInfo.map((col) => col.name);
+
+	if (!columnNames.includes('display_name')) {
+		try {
+			database.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
+		} catch (error: any) {
+			// Log but don't fail - column might exist with different case or error message
+			console.warn('Warning: Could not add display_name column:', error.message);
 		}
 	}
 
-	try {
-		database.exec("ALTER TABLE users ADD COLUMN platforms TEXT DEFAULT '[]'");
-		// Update existing users to have empty platforms array
-		database.exec("UPDATE users SET platforms = '[]' WHERE platforms IS NULL");
-	} catch (error: any) {
-		if (!error.message.includes('duplicate column')) {
-			throw error;
+	if (!columnNames.includes('platforms')) {
+		try {
+			database.exec("ALTER TABLE users ADD COLUMN platforms TEXT DEFAULT '[]'");
+			// Update existing users to have empty platforms array
+			database.exec("UPDATE users SET platforms = '[]' WHERE platforms IS NULL");
+		} catch (error: any) {
+			// Log but don't fail - column might exist with different case or error message
+			console.warn('Warning: Could not add platforms column:', error.message);
+		}
+	} else {
+		// Column exists, ensure existing users have empty platforms array if NULL
+		try {
+			database.exec("UPDATE users SET platforms = '[]' WHERE platforms IS NULL");
+		} catch (error: any) {
+			console.warn('Warning: Could not update platforms:', error.message);
 		}
 	}
 }
