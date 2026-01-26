@@ -155,7 +155,8 @@
 	}
 
 	$: sortedStats = $leagueStats ? (() => {
-		const stats = [...$leagueStats];
+		// Filter out players with 0 games (no stats)
+		const stats = [...$leagueStats].filter(stat => stat.totalGames > 0);
 		const isDesc = sortDirection === 'desc';
 		
 		// Pre-compute rank indices for performance
@@ -347,24 +348,6 @@
 						</button>
 						<button
 							class="col-span-1 text-right hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-end gap-1"
-							on:click={() => handleSort('firstPlace')}
-						>
-							1st
-							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('firstPlace') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								{#if getSortIcon('firstPlace') === 'asc'}
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-								{:else if getSortIcon('firstPlace') === 'desc'}
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-								{:else}
-									<g opacity="0.5">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-									</g>
-								{/if}
-							</svg>
-						</button>
-						<button
-							class="col-span-1 text-right hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-end gap-1"
 							on:click={() => handleSort('avgScore')}
 						>
 							Avg
@@ -381,43 +364,7 @@
 								{/if}
 							</svg>
 						</button>
-						<button
-							class="col-span-1 text-right hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-end gap-1"
-							on:click={() => handleSort('wins')}
-						>
-							W/L
-							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('wins') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								{#if getSortIcon('wins') === 'asc'}
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-								{:else if getSortIcon('wins') === 'desc'}
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-								{:else}
-									<g opacity="0.5">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-									</g>
-								{/if}
-							</svg>
-						</button>
-						<button
-							class="col-span-1 text-right hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-end gap-1"
-							on:click={() => handleSort('games')}
-						>
-							Games
-							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('games') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								{#if getSortIcon('games') === 'asc'}
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-								{:else if getSortIcon('games') === 'desc'}
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-								{:else}
-									<g opacity="0.5">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-									</g>
-								{/if}
-							</svg>
-						</button>
-						<div class="col-span-4">
+						<div class="col-span-7">
 							<div class="grid grid-cols-7 gap-0.5 text-xs sm:text-[10px]">
 								<button
 									class="text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
@@ -566,9 +513,10 @@
 								role="button"
 								tabindex="0"
 								class="px-2 sm:px-4 py-2 hover:bg-slate-50 active:bg-slate-100 transition-colors duration-150 cursor-pointer group"
+								on:click={() => (hoveredPlayerId = hoveredPlayerId === stat.userId ? null : stat.userId)}
 								on:mouseenter={() => (hoveredPlayerId = stat.userId)}
 								on:mouseleave={() => (hoveredPlayerId = null)}
-								on:touchstart={() => (hoveredPlayerId = stat.userId)}
+								on:touchstart={() => (hoveredPlayerId = hoveredPlayerId === stat.userId ? null : stat.userId)}
 							>
 								<div class="grid grid-cols-12 gap-1 sm:gap-2 items-center text-base sm:text-sm">
 									<!-- Rank -->
@@ -594,29 +542,13 @@
 										{stat.avgPlacement.toFixed(2)}
 									</div>
 
-									<!-- First Place -->
-									<div class="col-span-1 text-right font-mono text-slate-900 tabular-nums">
-										{stat.firstPlaceFinishes}
-									</div>
-
 									<!-- Avg Score -->
 									<div class="col-span-1 text-right font-mono font-semibold text-slate-900 tabular-nums">
 										{stat.averageScore.toFixed(1)}
 									</div>
 
-									<!-- W/L Record -->
-									<div class="col-span-1 text-right font-mono text-sm sm:text-xs tabular-nums">
-										<span class="text-emerald-600 font-semibold">{stat.wins}</span>/
-										<span class="text-red-500">{stat.losses}</span>
-									</div>
-
-									<!-- Total Games -->
-									<div class="col-span-1 text-right font-mono text-slate-600 tabular-nums text-sm sm:text-xs">
-										{stat.totalGames}
-									</div>
-
 									<!-- Scoring Breakdown - Compact with visible labels -->
-									<div class="col-span-4 px-0 sm:px-0">
+									<div class="col-span-7 px-0 sm:px-0">
 										<div class="grid grid-cols-7 gap-0.5 text-xs sm:text-[10px]">
 											<div
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-blue-50 text-blue-700 group-hover:bg-blue-100 active:bg-blue-200 transition-colors cursor-help"
@@ -685,51 +617,74 @@
 									</div>
 								</div>
 
-								<!-- Expanded Breakdown on Hover -->
+								<!-- Expanded Breakdown on Click/Hover -->
 								{#if hoveredPlayerId === stat.userId}
-									<div
-										class="mt-2 pt-2 border-t border-slate-200 grid grid-cols-7 gap-2 text-xs animate-in fade-in duration-200"
-									>
-										<div class="text-center">
-											<div class="text-slate-500 mb-1">Birds</div>
-											<div class="font-mono font-semibold text-slate-900">
-												{stat.avgBreakdown.birds.toFixed(1)}
+									<div class="mt-2 pt-2 border-t border-slate-200 animate-in fade-in duration-200">
+										<!-- Additional Stats -->
+										<div class="grid grid-cols-3 gap-4 mb-3 text-xs">
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">1st Place</div>
+												<div class="font-mono font-semibold text-slate-900">
+													{stat.firstPlaceFinishes}
+												</div>
+											</div>
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">W/L</div>
+												<div class="font-mono font-semibold text-slate-900">
+													<span class="text-emerald-600">{stat.wins}</span>/
+													<span class="text-red-500">{stat.losses}</span>
+												</div>
+											</div>
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">Total Games</div>
+												<div class="font-mono font-semibold text-slate-900">
+													{stat.totalGames}
+												</div>
 											</div>
 										</div>
-										<div class="text-center">
-											<div class="text-slate-500 mb-1">Bonus</div>
-											<div class="font-mono font-semibold text-slate-900">
-												{stat.avgBreakdown.bonusCards.toFixed(1)}
+										<!-- Category Breakdown -->
+										<div class="grid grid-cols-7 gap-2 text-xs">
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">Birds</div>
+												<div class="font-mono font-semibold text-slate-900">
+													{stat.avgBreakdown.birds.toFixed(1)}
+												</div>
 											</div>
-										</div>
-										<div class="text-center">
-											<div class="text-slate-500 mb-1">Goals</div>
-											<div class="font-mono font-semibold text-slate-900">
-												{stat.avgBreakdown.endOfRoundGoals.toFixed(1)}
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">Bonus</div>
+												<div class="font-mono font-semibold text-slate-900">
+													{stat.avgBreakdown.bonusCards.toFixed(1)}
+												</div>
 											</div>
-										</div>
-										<div class="text-center">
-											<div class="text-slate-500 mb-1">Eggs</div>
-											<div class="font-mono font-semibold text-slate-900">
-												{stat.avgBreakdown.eggs.toFixed(1)}
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">Goals</div>
+												<div class="font-mono font-semibold text-slate-900">
+													{stat.avgBreakdown.endOfRoundGoals.toFixed(1)}
+												</div>
 											</div>
-										</div>
-										<div class="text-center">
-											<div class="text-slate-500 mb-1">Food</div>
-											<div class="font-mono font-semibold text-slate-900">
-												{stat.avgBreakdown.foodOnCards.toFixed(1)}
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">Eggs</div>
+												<div class="font-mono font-semibold text-slate-900">
+													{stat.avgBreakdown.eggs.toFixed(1)}
+												</div>
 											</div>
-										</div>
-										<div class="text-center">
-											<div class="text-slate-500 mb-1">Tucked</div>
-											<div class="font-mono font-semibold text-slate-900">
-												{stat.avgBreakdown.tuckedCards.toFixed(1)}
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">Food</div>
+												<div class="font-mono font-semibold text-slate-900">
+													{stat.avgBreakdown.foodOnCards.toFixed(1)}
+												</div>
 											</div>
-										</div>
-										<div class="text-center">
-											<div class="text-slate-500 mb-1">Nectar</div>
-											<div class="font-mono font-semibold text-slate-900">
-												{stat.avgBreakdown.nectar.toFixed(1)}
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">Tucked</div>
+												<div class="font-mono font-semibold text-slate-900">
+													{stat.avgBreakdown.tuckedCards.toFixed(1)}
+												</div>
+											</div>
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">Nectar</div>
+												<div class="font-mono font-semibold text-slate-900">
+													{stat.avgBreakdown.nectar.toFixed(1)}
+												</div>
 											</div>
 										</div>
 									</div>
@@ -747,7 +702,7 @@
 				</div>
 				<div class="p-2 sm:p-4">
 					{#if gameHistory.length > 0}
-						<div class="grid grid-cols-3 gap-2 sm:gap-4">
+						<div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4">
 							{#each gameHistory.slice(0, 3) as game}
 								{@const sortedScores = game.scores.sort((a, b) => b.totalScore - a.totalScore)}
 								<div

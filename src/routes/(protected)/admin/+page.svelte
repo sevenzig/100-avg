@@ -72,23 +72,43 @@
 
 	// Reactive check - wait for user to be loaded, then check admin status
 	$: if ($user !== null && $user !== undefined && !dataLoaded) {
-		// Check admin status
-		if ($user.isAdmin !== true) {
+		// Check admin status - handle both boolean true and number 1
+		const isAdmin = $user.isAdmin === true || $user.isAdmin === 1;
+		if (!isAdmin) {
 			console.log('User is not admin, redirecting...', { 
 				userId: $user.id, 
 				username: $user.username, 
-				isAdmin: $user.isAdmin 
+				isAdmin: $user.isAdmin,
+				isAdminType: typeof $user.isAdmin
 			});
 			goto('/leagues');
-		} else if ($user.isAdmin === true && loading) {
+		} else if (isAdmin && loading) {
 			// User is admin, load data
 			loadData();
 		}
 	}
 
+	async function refreshUserData() {
+		// Re-fetch user data to ensure we have the latest admin status
+		try {
+			const response = await fetch('/api/auth/me');
+			if (response.ok) {
+				const data = await response.json();
+				console.log('Refreshed user data:', data.user);
+				user.set(data.user);
+				return data.user;
+			}
+		} catch (e) {
+			console.error('Error refreshing user data:', e);
+		}
+		return null;
+	}
+
 	onMount(async () => {
-		// Wait for user to be loaded from the protected layout
-		// The layout loads user asynchronously, so we need to wait
+		// First, refresh user data to ensure we have latest admin status
+		const refreshedUser = await refreshUserData();
+		
+		// Wait for user to be loaded from the protected layout or refreshed
 		let attempts = 0;
 		while (($user === null || $user === undefined) && attempts < 10) {
 			await new Promise((resolve) => setTimeout(resolve, 100));
@@ -103,12 +123,21 @@
 			return;
 		}
 		
-		// Check admin status
-		if ($user.isAdmin !== true) {
-			console.log('User is not admin:', { 
+		// Log user data for debugging
+		console.log('Admin page - User data:', {
+			id: $user.id,
+			username: $user.username,
+			isAdmin: $user.isAdmin,
+			isAdminType: typeof $user.isAdmin
+		});
+		
+		// Check admin status - be more lenient with the check
+		if ($user.isAdmin !== true && $user.isAdmin !== 1) {
+			console.log('User is not admin, redirecting...', { 
 				userId: $user.id, 
 				username: $user.username, 
-				isAdmin: $user.isAdmin 
+				isAdmin: $user.isAdmin,
+				isAdminType: typeof $user.isAdmin
 			});
 			goto('/leagues');
 			return;
