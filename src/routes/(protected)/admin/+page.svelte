@@ -80,10 +80,8 @@
 				isAdmin: $user.isAdmin 
 			});
 			goto('/leagues');
-			return;
-		}
-		// User is admin, load data
-		if ($user.isAdmin === true && loading) {
+		} else if ($user.isAdmin === true && loading) {
+			// User is admin, load data
 			loadData();
 		}
 	}
