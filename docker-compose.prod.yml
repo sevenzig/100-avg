@@ -19,7 +19,10 @@ services:
     expose:
       - "3000"
     volumes:
-      # Only mount database directory for persistence
+      # Mount persistent volume for database storage
+      # This volume will persist data across container restarts and deployments
+      # If the volume is empty on first mount, the seeded database from the image will be used
+      # Subsequent mounts will use the persisted data from the volume
       - wingspan-db-prod:/app/database
     environment:
       - NODE_ENV=production
@@ -41,8 +44,17 @@ services:
       start_period: 10s
 
 volumes:
+  # Named volume for database persistence
+  # This volume stores the SQLite database file and persists across container lifecycle
+  # Location on host: Docker manages this (typically in /var/lib/docker/volumes/)
+  # To backup: docker run --rm -v wingspan-db-prod:/data -v $(pwd):/backup alpine tar czf /backup/db-backup.tar.gz /data
   wingspan-db-prod:
     driver: local
+    # Optional: specify a custom location for the volume
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /path/to/persistent/storage
 
 networks:
   wingspan-network:

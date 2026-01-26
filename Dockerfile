@@ -52,12 +52,17 @@ COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/static ./static
 
 # Create database directory with proper permissions
+# This directory will be used for volume mounting in docker-compose.prod.yml
+# The volume mount (wingspan-db-prod:/app/database) will override this directory
+# but the directory must exist in the image for the mount to work properly
 RUN mkdir -p /app/database && \
     chown -R nodejs:nodejs /app/database
 
 # Copy database file from builder stage if it exists (for initial seed data)
-# If a volume is mounted in production, it will override this file
-# If no volume exists, this seeded database will be used
+# Volume mounting behavior:
+# - If volume is empty on first mount: contents from image (including seeded DB) are copied to volume
+# - If volume already has data: volume contents take precedence (persisted data is used)
+# - If no volume is mounted: seeded database from image will be used (but won't persist)
 # Using shell glob to handle case where file might not exist
 RUN --mount=from=builder,source=/app/database,target=/tmp/db \
     sh -c 'if ls /tmp/db/*.db 1> /dev/null 2>&1; then cp /tmp/db/*.db /app/database/ && chown nodejs:nodejs /app/database/*.db; fi'
