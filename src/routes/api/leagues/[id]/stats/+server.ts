@@ -53,6 +53,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 			COALESCE(AVG(s.placement), 0) as avg_placement,
 			COUNT(DISTINCT CASE WHEN s.placement = 1 THEN g.id END) as first_place_finishes,
 			COALESCE(AVG(s.total_score), 0) as average_score,
+			COALESCE(MAX(s.total_score), 0) as highest_score,
+			COALESCE(MIN(s.total_score), 0) as lowest_score,
 			COALESCE(AVG(s.birds), 0) as avg_birds,
 			COALESCE(AVG(s.bonus_cards), 0) as avg_bonus_cards,
 			COALESCE(AVG(s.end_of_round_goals), 0) as avg_end_of_round_goals,
@@ -83,6 +85,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		avg_placement: number;
 		first_place_finishes: number;
 		average_score: number;
+		highest_score: number;
+		lowest_score: number;
 		avg_birds: number;
 		avg_bonus_cards: number;
 		avg_end_of_round_goals: number;
@@ -102,6 +106,8 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		avgPlacement: stat.avg_placement || 0,
 		firstPlaceFinishes: stat.first_place_finishes || 0,
 		averageScore: stat.average_score || 0,
+		highestScore: stat.highest_score || 0,
+		lowestScore: stat.lowest_score || 0,
 		avgBreakdown: {
 			birds: stat.avg_birds || 0,
 			bonusCards: stat.avg_bonus_cards || 0,

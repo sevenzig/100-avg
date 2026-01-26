@@ -45,7 +45,13 @@
 	}> = [];
 
 	let playedAt = new Date().toISOString().split('T')[0];
-	let allUsers: Array<{ id: number; username: string }> = [];
+	let allUsers: Array<{
+		id: number;
+		username: string;
+		steam_alias?: string | null;
+		android_alias?: string | null;
+		iphone_alias?: string | null;
+	}> = [];
 
 	const playerColors = ['#3B82F6', '#F59E0B', '#8B5CF6', '#10B981', '#EF4444'];
 
@@ -249,7 +255,38 @@
 	}
 
 	function findUserByName(name: string): { id: number; username: string } | null {
-		return allUsers.find((u) => u.username.toLowerCase() === name.toLowerCase()) || null;
+		const searchName = name.toLowerCase().trim();
+		
+		if (!searchName) {
+			return null;
+		}
+		
+		// Match against username and all platform aliases (case-insensitive)
+		const matchedUser = allUsers.find((u) => {
+			// Check username
+			if (u.username && u.username.toLowerCase().trim() === searchName) {
+				return true;
+			}
+			
+			// Check Steam alias
+			if (u.steam_alias && u.steam_alias.toLowerCase().trim() === searchName) {
+				return true;
+			}
+			
+			// Check Android alias
+			if (u.android_alias && u.android_alias.toLowerCase().trim() === searchName) {
+				return true;
+			}
+			
+			// Check iPhone alias
+			if (u.iphone_alias && u.iphone_alias.toLowerCase().trim() === searchName) {
+				return true;
+			}
+			
+			return false;
+		});
+		
+		return matchedUser ? { id: matchedUser.id, username: matchedUser.username } : null;
 	}
 
 	function validate(): boolean {

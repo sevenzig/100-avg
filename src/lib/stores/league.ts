@@ -25,6 +25,8 @@ export interface LeagueStats {
 	avgPlacement: number;
 	firstPlaceFinishes: number;
 	averageScore: number;
+	highestScore: number;
+	lowestScore: number;
 	avgBreakdown: {
 		birds: number;
 		bonusCards: number;

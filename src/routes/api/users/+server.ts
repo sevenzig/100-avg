@@ -18,10 +18,19 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 	const db = getDb();
 
-	// Get all users (for league creation)
+	// Get all users with platform aliases (for league creation and screenshot matching)
 	const users = db
-		.prepare('SELECT id, username, email FROM users ORDER BY username')
-		.all() as Array<{ id: number; username: string; email: string }>;
+		.prepare(
+			'SELECT id, username, email, steam_alias, android_alias, iphone_alias FROM users ORDER BY username'
+		)
+		.all() as Array<{
+		id: number;
+		username: string;
+		email: string;
+		steam_alias: string | null;
+		android_alias: string | null;
+		iphone_alias: string | null;
+	}>;
 
 	return json({ users });
 };

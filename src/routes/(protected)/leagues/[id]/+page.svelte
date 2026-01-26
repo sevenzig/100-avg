@@ -306,11 +306,11 @@
 				<div class="bg-slate-50 border-b border-slate-200 px-2 sm:px-4 py-2 shrink-0">
 					<div class="grid grid-cols-12 gap-1 sm:gap-2 text-sm sm:text-xs font-semibold text-slate-600 uppercase tracking-wider">
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5 px-1"
 							on:click={() => handleSort('rank')}
 						>
-							Rank
-							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('rank') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<span class="text-xs sm:text-[10px]">Rank</span>
+							<svg class="w-3 h-3 sm:w-2.5 sm:h-2.5 {getSortIcon('rank') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								{#if getSortIcon('rank') === 'asc'}
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
 								{:else if getSortIcon('rank') === 'desc'}
@@ -342,7 +342,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-right hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-end gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
 							on:click={() => handleSort('avgPlacement')}
 						>
 							Avg Pl
@@ -360,7 +360,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-right hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-end gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
 							on:click={() => handleSort('avgScore')}
 						>
 							Avg
@@ -377,143 +377,139 @@
 								{/if}
 							</svg>
 						</button>
-						<div class="col-span-7">
-							<div class="grid grid-cols-7 gap-0.5 text-xs sm:text-[10px]">
-								<button
-									class="text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
-									title="Birds"
-									on:click={() => handleSort('birds')}
-								>
-									B
-									<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('birds') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										{#if getSortIcon('birds') === 'asc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										{:else if getSortIcon('birds') === 'desc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-										{:else}
-											<g opacity="0.5">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-											</g>
-										{/if}
-									</svg>
-								</button>
-								<button
-									class="text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
-									title="Bonus Cards"
-									on:click={() => handleSort('bonusCards')}
-								>
-									C
-									<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('bonusCards') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										{#if getSortIcon('bonusCards') === 'asc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										{:else if getSortIcon('bonusCards') === 'desc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-										{:else}
-											<g opacity="0.5">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-											</g>
-										{/if}
-									</svg>
-								</button>
-								<button
-									class="text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
-									title="End of Round Goals"
-									on:click={() => handleSort('endOfRoundGoals')}
-								>
-									G
-									<svg class="w-3.5 h-3.5 sm:w-2.5 sm:h-2.5 {getSortIcon('endOfRoundGoals') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										{#if getSortIcon('endOfRoundGoals') === 'asc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										{:else if getSortIcon('endOfRoundGoals') === 'desc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-										{:else}
-											<g opacity="0.5">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-											</g>
-										{/if}
-									</svg>
-								</button>
-								<button
-									class="text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
-									title="Eggs"
-									on:click={() => handleSort('eggs')}
-								>
-									E
-									<svg class="w-3.5 h-3.5 sm:w-2.5 sm:h-2.5 {getSortIcon('eggs') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										{#if getSortIcon('eggs') === 'asc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										{:else if getSortIcon('eggs') === 'desc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-										{:else}
-											<g opacity="0.5">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-											</g>
-										{/if}
-									</svg>
-								</button>
-								<button
-									class="text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
-									title="Food on Cards"
-									on:click={() => handleSort('foodOnCards')}
-								>
-									F
-									<svg class="w-3.5 h-3.5 sm:w-2.5 sm:h-2.5 {getSortIcon('foodOnCards') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										{#if getSortIcon('foodOnCards') === 'asc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										{:else if getSortIcon('foodOnCards') === 'desc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-										{:else}
-											<g opacity="0.5">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-											</g>
-										{/if}
-									</svg>
-								</button>
-								<button
-									class="text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
-									title="Tucked Cards"
-									on:click={() => handleSort('tuckedCards')}
-								>
-									T
-									<svg class="w-3.5 h-3.5 sm:w-2.5 sm:h-2.5 {getSortIcon('tuckedCards') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										{#if getSortIcon('tuckedCards') === 'asc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										{:else if getSortIcon('tuckedCards') === 'desc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-										{:else}
-											<g opacity="0.5">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-											</g>
-										{/if}
-									</svg>
-								</button>
-								<button
-									class="text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5"
-									title="Nectar"
-									on:click={() => handleSort('nectar')}
-								>
-									N
-									<svg class="w-3.5 h-3.5 sm:w-2.5 sm:h-2.5 {getSortIcon('nectar') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										{#if getSortIcon('nectar') === 'asc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-										{:else if getSortIcon('nectar') === 'desc'}
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-										{:else}
-											<g opacity="0.5">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-											</g>
-										{/if}
-									</svg>
-								</button>
-							</div>
-						</div>
+						<button
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							title="Birds - Average points from bird cards played"
+							on:click={() => handleSort('birds')}
+						>
+							B
+							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('birds') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								{#if getSortIcon('birds') === 'asc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+								{:else if getSortIcon('birds') === 'desc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								{:else}
+									<g opacity="0.5">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+									</g>
+								{/if}
+							</svg>
+						</button>
+						<button
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							title="Bonus Cards - Average points from bonus card objectives"
+							on:click={() => handleSort('bonusCards')}
+						>
+							C
+							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('bonusCards') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								{#if getSortIcon('bonusCards') === 'asc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+								{:else if getSortIcon('bonusCards') === 'desc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								{:else}
+									<g opacity="0.5">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+									</g>
+								{/if}
+							</svg>
+						</button>
+						<button
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							title="End of Round Goals - Average points from round-end goal achievements"
+							on:click={() => handleSort('endOfRoundGoals')}
+						>
+							G
+							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('endOfRoundGoals') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								{#if getSortIcon('endOfRoundGoals') === 'asc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+								{:else if getSortIcon('endOfRoundGoals') === 'desc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								{:else}
+									<g opacity="0.5">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+									</g>
+								{/if}
+							</svg>
+						</button>
+						<button
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							title="Eggs - Average points from eggs laid on bird cards"
+							on:click={() => handleSort('eggs')}
+						>
+							E
+							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('eggs') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								{#if getSortIcon('eggs') === 'asc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+								{:else if getSortIcon('eggs') === 'desc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								{:else}
+									<g opacity="0.5">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+									</g>
+								{/if}
+							</svg>
+						</button>
+						<button
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							title="Food on Cards - Average points from food tokens on bird cards"
+							on:click={() => handleSort('foodOnCards')}
+						>
+							F
+							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('foodOnCards') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								{#if getSortIcon('foodOnCards') === 'asc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+								{:else if getSortIcon('foodOnCards') === 'desc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								{:else}
+									<g opacity="0.5">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+									</g>
+								{/if}
+							</svg>
+						</button>
+						<button
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							title="Tucked Cards - Average points from cards tucked under bird cards"
+							on:click={() => handleSort('tuckedCards')}
+						>
+							T
+							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('tuckedCards') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								{#if getSortIcon('tuckedCards') === 'asc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+								{:else if getSortIcon('tuckedCards') === 'desc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								{:else}
+									<g opacity="0.5">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+									</g>
+								{/if}
+							</svg>
+						</button>
+						<button
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							title="Nectar - Average points from nectar tokens (Oceania expansion)"
+							on:click={() => handleSort('nectar')}
+						>
+							N
+							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('nectar') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								{#if getSortIcon('nectar') === 'asc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+								{:else if getSortIcon('nectar') === 'desc'}
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+								{:else}
+									<g opacity="0.5">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+									</g>
+								{/if}
+							</svg>
+						</button>
 					</div>
 				</div>
 
@@ -527,14 +523,17 @@
 								tabindex="0"
 								class="px-2 sm:px-4 py-2 hover:bg-slate-50 active:bg-slate-100 transition-colors duration-150 cursor-pointer group"
 								on:click={() => (hoveredPlayerId = hoveredPlayerId === stat.userId ? null : stat.userId)}
-								on:mouseenter={() => (hoveredPlayerId = stat.userId)}
-								on:mouseleave={() => (hoveredPlayerId = null)}
-								on:touchstart={() => (hoveredPlayerId = hoveredPlayerId === stat.userId ? null : stat.userId)}
+								on:keydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										hoveredPlayerId = hoveredPlayerId === stat.userId ? null : stat.userId;
+									}
+								}}
 							>
 								<div class="grid grid-cols-12 gap-1 sm:gap-2 items-center text-base sm:text-sm">
 									<!-- Rank -->
-									<div class="col-span-1 text-center">
-										<span class="text-xl sm:text-lg font-bold text-slate-700">{getRankBadge(index)}</span>
+									<div class="col-span-1 text-center px-1">
+										<span class="text-lg sm:text-base font-bold text-slate-700">{getRankBadge(index)}</span>
 									</div>
 
 									<!-- Player Name -->
@@ -551,12 +550,12 @@
 									</div>
 
 									<!-- Avg Placement -->
-									<div class="col-span-1 text-right font-mono text-slate-900 tabular-nums">
+									<div class="col-span-1 text-center font-mono text-slate-900 tabular-nums">
 										{stat.avgPlacement.toFixed(2)}
 									</div>
 
 									<!-- Avg Score -->
-									<div class="col-span-1 text-right font-mono font-semibold text-slate-900 tabular-nums">
+									<div class="col-span-1 text-center font-mono font-semibold text-slate-900 tabular-nums">
 										{stat.averageScore.toFixed(1)}
 									</div>
 
@@ -564,8 +563,8 @@
 									<div class="col-span-7 px-0 sm:px-0">
 										<div class="grid grid-cols-7 gap-0.5 text-xs sm:text-[10px]">
 											<div
-												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-blue-50 text-blue-700 group-hover:bg-blue-100 active:bg-blue-200 transition-colors cursor-help"
-												title="Birds"
+												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-blue-50 text-blue-700 group-hover:bg-blue-100 active:bg-blue-200 transition-colors cursor-pointer"
+												title={`Birds - Average points from bird cards played (Avg: ${stat.avgBreakdown.birds.toFixed(1)} pts)`}
 											>
 												<div class="font-semibold leading-tight">B</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
@@ -573,8 +572,8 @@
 												</div>
 											</div>
 											<div
-												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-green-50 text-green-700 group-hover:bg-green-100 active:bg-green-200 transition-colors cursor-help"
-												title="Bonus Cards"
+												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-green-50 text-green-700 group-hover:bg-green-100 active:bg-green-200 transition-colors cursor-pointer"
+												title={`Bonus Cards - Average points from bonus card objectives (Avg: ${stat.avgBreakdown.bonusCards.toFixed(1)} pts)`}
 											>
 												<div class="font-semibold leading-tight">C</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
@@ -582,8 +581,8 @@
 												</div>
 											</div>
 											<div
-												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-yellow-50 text-yellow-700 group-hover:bg-yellow-100 active:bg-yellow-200 transition-colors cursor-help"
-												title="End of Round Goals"
+												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-yellow-50 text-yellow-700 group-hover:bg-yellow-100 active:bg-yellow-200 transition-colors cursor-pointer"
+												title={`End of Round Goals - Average points from round-end goal achievements (Avg: ${stat.avgBreakdown.endOfRoundGoals.toFixed(1)} pts)`}
 											>
 												<div class="font-semibold leading-tight">G</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
@@ -591,8 +590,8 @@
 												</div>
 											</div>
 											<div
-												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-amber-50 text-amber-700 group-hover:bg-amber-100 active:bg-amber-200 transition-colors cursor-help"
-												title="Eggs"
+												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-amber-50 text-amber-700 group-hover:bg-amber-100 active:bg-amber-200 transition-colors cursor-pointer"
+												title={`Eggs - Average points from eggs laid on bird cards (Avg: ${stat.avgBreakdown.eggs.toFixed(1)} pts)`}
 											>
 												<div class="font-semibold leading-tight">E</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
@@ -600,8 +599,8 @@
 												</div>
 											</div>
 											<div
-												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-red-50 text-red-700 group-hover:bg-red-100 active:bg-red-200 transition-colors cursor-help"
-												title="Food on Cards"
+												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-red-50 text-red-700 group-hover:bg-red-100 active:bg-red-200 transition-colors cursor-pointer"
+												title={`Food on Cards - Average points from food tokens on bird cards (Avg: ${stat.avgBreakdown.foodOnCards.toFixed(1)} pts)`}
 											>
 												<div class="font-semibold leading-tight">F</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
@@ -609,8 +608,8 @@
 												</div>
 											</div>
 											<div
-												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-purple-50 text-purple-700 group-hover:bg-purple-100 active:bg-purple-200 transition-colors cursor-help"
-												title="Tucked Cards"
+												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-purple-50 text-purple-700 group-hover:bg-purple-100 active:bg-purple-200 transition-colors cursor-pointer"
+												title={`Tucked Cards - Average points from cards tucked under bird cards (Avg: ${stat.avgBreakdown.tuckedCards.toFixed(1)} pts)`}
 											>
 												<div class="font-semibold leading-tight">T</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
@@ -618,8 +617,8 @@
 												</div>
 											</div>
 											<div
-												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-pink-50 text-pink-700 group-hover:bg-pink-100 active:bg-pink-200 transition-colors cursor-help"
-												title="Nectar"
+												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-pink-50 text-pink-700 group-hover:bg-pink-100 active:bg-pink-200 transition-colors cursor-pointer"
+												title={`Nectar - Average points from nectar tokens, Oceania expansion (Avg: ${stat.avgBreakdown.nectar.toFixed(1)} pts)`}
 											>
 												<div class="font-semibold leading-tight">N</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
@@ -630,15 +629,15 @@
 									</div>
 								</div>
 
-								<!-- Expanded Breakdown on Click/Hover -->
+								<!-- Expanded Breakdown on Click -->
 								{#if hoveredPlayerId === stat.userId}
 									<div class="mt-2 pt-2 border-t border-slate-200 animate-in fade-in duration-200">
-										<!-- Additional Stats -->
-										<div class="grid grid-cols-3 gap-4 mb-3 text-xs">
+										<!-- Combined Stats Row -->
+										<div class="grid grid-cols-4 gap-4 mb-3 text-xs">
 											<div class="text-center">
-												<div class="text-slate-500 mb-1">1st Place</div>
+												<div class="text-slate-500 mb-1">Total Games</div>
 												<div class="font-mono font-semibold text-slate-900">
-													{stat.firstPlaceFinishes}
+													{stat.totalGames}
 												</div>
 											</div>
 											<div class="text-center">
@@ -649,9 +648,15 @@
 												</div>
 											</div>
 											<div class="text-center">
-												<div class="text-slate-500 mb-1">Total Games</div>
-												<div class="font-mono font-semibold text-slate-900">
-													{stat.totalGames}
+												<div class="text-slate-500 mb-1">Highest Score</div>
+												<div class="font-mono font-semibold text-emerald-600">
+													{stat.highestScore > 0 ? stat.highestScore : '—'}
+												</div>
+											</div>
+											<div class="text-center">
+												<div class="text-slate-500 mb-1">Lowest Score</div>
+												<div class="font-mono font-semibold text-red-500">
+													{stat.lowestScore > 0 ? stat.lowestScore : '—'}
 												</div>
 											</div>
 										</div>
@@ -699,6 +704,18 @@
 													{stat.avgBreakdown.nectar.toFixed(1)}
 												</div>
 											</div>
+										</div>
+										<!-- View Profile Link -->
+										<div class="mt-3 pt-3 border-t border-slate-200">
+											<a
+												href="/profile/{stat.userId}"
+												class="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+												on:click|stopPropagation={(e) => {
+													// Allow navigation, but prevent row toggle
+												}}
+											>
+												View Full User Profile →
+											</a>
 										</div>
 									</div>
 								{/if}
