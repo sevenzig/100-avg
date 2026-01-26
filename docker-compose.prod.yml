@@ -30,8 +30,6 @@ services:
       - ORIGIN=${ORIGIN:-https://100avg.phelddagrif.farm}
       - PROTOCOL_HEADER=x-forwarded-proto
       - HOST_HEADER=x-forwarded-host
-    env_file:
-      - .env.production
     restart: unless-stopped
     networks:
       - wingspan-network
