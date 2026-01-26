@@ -34,6 +34,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
       - PORT=5173
       - HOST=0.0.0.0
+      - ORIGIN=${ORIGIN:-http://localhost:5173,https://100avg.phelddagrif.farm}
     env_file:
       - .env
     command: npm run dev

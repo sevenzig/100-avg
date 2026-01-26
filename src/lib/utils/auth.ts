@@ -8,8 +8,8 @@ import { dev } from '$app/environment';
 const BCRYPT_ROUNDS = 10;
 const JWT_EXPIRES_IN = '7d';
 
-// In production, JWT_SECRET must be set - fail fast if missing
-const JWT_SECRET = (() => {
+// Lazy JWT_SECRET getter - only evaluated at runtime, not build time
+function getJwtSecret(): string {
 	if (env.JWT_SECRET) {
 		return env.JWT_SECRET;
 	}
@@ -18,7 +18,7 @@ const JWT_SECRET = (() => {
 		return 'dev-only-secret-do-not-use-in-production';
 	}
 	throw new Error('JWT_SECRET environment variable is required in production');
-})();
+}
 
 export async function hashPassword(password: string): Promise<string> {
 	return bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -29,12 +29,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 export function generateToken(userId: number): string {
-	return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+	return jwt.sign({ userId }, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN });
 }
 
 export function verifyToken(token: string): { userId: number } | null {
 	try {
-		const decoded = jwt.verify(token, JWT_SECRET) as { userId: number };
+		const decoded = jwt.verify(token, getJwtSecret()) as { userId: number };
 		return decoded;
 	} catch (error) {
 		return null;
