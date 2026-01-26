@@ -45,7 +45,8 @@ coverage
 *.spec.js
 
 # Database files (will be in volume)
-database/*.db
+# Temporarily allowing wingspan.db for initial seeding - REMOVE AFTER DEPLOY
+# database/*.db
 database/*.db-journal
 database/*.db-wal
 database/*.db-shm
