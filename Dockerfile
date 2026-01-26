@@ -55,8 +55,8 @@ COPY --from=builder --chown=nodejs:nodejs /app/static ./static
 RUN mkdir -p /app/database && \
     chown -R nodejs:nodejs /app/database
 
-# Copy existing database (for initial seeding)
-COPY --chown=nodejs:nodejs database/wingspan.db /app/database/wingspan.db
+# Note: Database will be created automatically by the application on first run
+# If you need to seed an existing database, copy it into the volume after deployment
 
 # Switch to non-root user
 USER nodejs
