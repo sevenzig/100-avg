@@ -1,0 +1,175 @@
+{
+  "project": {
+    "name": "wingspan-score",
+    "version": "1.0.0",
+    "type": "sveltekit",
+    "description": "Wingspan board game score tracker with league management and statistics"
+  },
+  "entryPoints": {
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "preview": "npm run preview",
+    "api": "/api/*",
+    "database": "src/lib/utils/db.ts",
+    "hooks": "src/hooks.server.ts"
+  },
+  "coreModules": {
+    "database": {
+      "path": "src/lib/utils/db.ts",
+      "exports": ["getDb", "initDatabase"],
+      "purpose": "SQLite database connection and schema initialization"
+    },
+    "auth": {
+      "path": "src/lib/utils/auth.ts",
+      "exports": ["hashPassword", "verifyPassword", "generateToken", "verifyToken", "getUserIdFromRequest"],
+      "purpose": "JWT-based authentication with bcrypt password hashing"
+    },
+    "stores": {
+      "path": "src/lib/stores/",
+      "files": ["auth.ts", "league.ts", "ui.ts"],
+      "purpose": "Svelte stores for state management"
+    }
+  },
+  "apiRoutes": {
+    "auth": {
+      "login": "/api/auth/login",
+      "logout": "/api/auth/logout",
+      "register": "/api/auth/register",
+      "me": "/api/auth/me"
+    },
+    "leagues": {
+      "list": "/api/leagues (GET)",
+      "create": "/api/leagues (POST)",
+      "get": "/api/leagues/[id] (GET)",
+      "stats": "/api/leagues/[id]/stats (GET)",
+      "games": "/api/leagues/[id]/games (GET)"
+    },
+    "games": {
+      "create": "/api/games (POST)",
+      "get": "/api/games/[id] (GET)"
+    },
+    "users": {
+      "list": "/api/users (GET)"
+    }
+  },
+  "components": {
+    "shared": [
+      "Button.svelte",
+      "Card.svelte",
+      "Input.svelte",
+      "Table.svelte",
+      "Badge.svelte",
+      "Modal.svelte"
+    ],
+    "auth": [
+      "LoginForm.svelte",
+      "RegisterForm.svelte"
+    ],
+    "league": [
+      "LeagueSelector.svelte",
+      "LeagueCard.svelte",
+      "PlayerCard.svelte",
+      "CreateLeagueModal.svelte"
+    ],
+    "scoreboard": [
+      "StatsTable.svelte",
+      "ScoringBreakdown.svelte",
+      "PerformanceChart.svelte",
+      "AddGameModal.svelte"
+    ]
+  },
+  "database": {
+    "type": "SQLite",
+    "path": "database/wingspan.db",
+    "tables": [
+      "users",
+      "leagues",
+      "league_players",
+      "games",
+      "scores"
+    ],
+    "relationships": {
+      "users_leagues": "many-to-many via league_players",
+      "leagues_games": "one-to-many",
+      "games_scores": "one-to-many (exactly 3 per game)"
+    }
+  },
+  "configuration": {
+    "svelte": "svelte.config.js",
+    "vite": "vite.config.js",
+    "typescript": "tsconfig.json",
+    "tailwind": "tailwind.config.js",
+    "postcss": "postcss.config.js",
+    "docker": ["Dockerfile", "Dockerfile.dev", "docker-compose.yml", "docker-compose.prod.yml"]
+  },
+  "documentation": [
+    "README.md",
+    "DESIGN.md",
+    "API_DOCUMENTATION.md",
+    "DATABASE_SCHEMA.md",
+    "COMPONENT_SPECS.md",
+    "USER_FLOWS.md",
+    "SETUP.md",
+    "DOCKER_README.md"
+  ],
+  "scripts": {
+    "database": ["seed-database.ts", "check-database.ts", "cleanup-duplicates.ts", "fix-league-1.ts"],
+    "migration": ["migrate-to-5-players.ts"],
+    "users": ["add-users.ts", "add-admin-users.ts", "list-users.ts"],
+    "data": ["import-new-game-data.ts", "associate-game-to-league.ts"]
+  },
+  "dependencies": {
+    "runtime": {
+      "@sveltejs/kit": "^2.50.1",
+      "svelte": "^4.2.20",
+      "better-sqlite3": "^12.6.2",
+      "bcryptjs": "^2.4.3",
+      "jsonwebtoken": "^9.0.3",
+      "chart.js": "^4.5.1",
+      "svelte-chartjs": "^3.1.5"
+    },
+    "dev": {
+      "@sveltejs/adapter-node": "^5.2.0",
+      "typescript": "^5.7.2",
+      "tailwindcss": "^3.4.17",
+      "daisyui": "^4.12.24",
+      "vite": "^5.4.21",
+      "tsx": "^4.19.2"
+    }
+  },
+  "features": {
+    "authentication": "JWT-based with httpOnly cookies",
+    "leagues": "Multi-player league management (3+ players)",
+    "games": "Game session tracking with detailed scoring",
+    "statistics": "Average placement, wins/losses, scoring breakdown",
+    "visualizations": "Performance charts, scoring breakdown charts",
+    "responsive": "Mobile-first design with DaisyUI"
+  },
+  "security": {
+    "passwordHashing": "bcrypt (10 rounds)",
+    "jwt": "7-day expiry, httpOnly cookies",
+    "sqlInjection": "Parameterized queries",
+    "xss": "Svelte automatic escaping",
+    "csrf": "SameSite strict cookies"
+  },
+  "statistics": {
+    "tracked": [
+      "Average placement (1-5)",
+      "First place finishes",
+      "Average total score",
+      "Average scoring breakdown (birds, bonus cards, end of round goals, eggs, food on cards, tucked cards, nectar)"
+    ]
+  },
+  "fileCounts": {
+    "components": 18,
+    "apiRoutes": 10,
+    "scripts": 12,
+    "documentation": 8
+  },
+  "generated": "2026-01-25",
+  "tokenEfficiency": {
+    "indexSize": "~3,000 tokens",
+    "fullCodebase": "~58,000 tokens",
+    "savings": "94% reduction"
+  }
+}

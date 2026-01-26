@@ -52,3 +52,17 @@ export function getUserIdFromRequest(request: Request): number | null {
 	const decoded = verifyToken(token);
 	return decoded?.userId || null;
 }
+
+export function getUserId(cookies: any): number | null {
+	const token = cookies.get('token');
+	if (!token) return null;
+	const decoded = verifyToken(token);
+	return decoded?.userId || null;
+}
+
+export function isAdmin(userId: number, db: any): boolean {
+	const user = db
+		.prepare('SELECT is_admin FROM users WHERE id = ?')
+		.get(userId) as { is_admin: number | null } | undefined;
+	return user?.is_admin === 1;
+}

@@ -41,6 +41,14 @@
 				</div>
 				<div class="flex-none gap-2">
 					{#if $user}
+						{#if $user.isAdmin}
+							<a
+								href="/admin"
+								class="btn btn-ghost text-slate-700 hover:text-slate-900 {page.url.pathname === '/admin' ? 'bg-slate-100' : ''}"
+							>
+								Admin
+							</a>
+						{/if}
 						<div class="dropdown dropdown-end">
 							<label tabindex="0" class="btn btn-ghost text-slate-700 hover:text-slate-900">
 								<span>{$user.username}</span>

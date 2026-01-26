@@ -39,7 +39,7 @@ async function addAdminUsers() {
 		}
 	}
 
-	const adminUsernames = ['blabberman23', 'skycondition'];
+	const adminUsernames = ['sevenzig', 'blabberman23', 'skycondition'];
 
 	try {
 		for (const username of adminUsernames) {

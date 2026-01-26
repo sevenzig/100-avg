@@ -6,6 +6,7 @@ export interface User {
 	username: string;
 	email: string;
 	createdAt?: string;
+	isAdmin?: boolean;
 }
 
 export const user: Writable<User | null> = writable(null);
