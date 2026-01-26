@@ -11,6 +11,7 @@
 		"seed": "npx tsx scripts/seed-database.ts",
 		"associate": "npx tsx scripts/associate-game-to-league.ts",
 		"migrate": "npx tsx scripts/migrate-to-5-players.ts",
+		"migrate-profile": "npx tsx scripts/migrate-profile-columns.ts",
 		"check-db": "npx tsx scripts/check-database.ts",
 		"cleanup": "npx tsx scripts/cleanup-duplicates.ts",
 		"fix-league1": "npx tsx scripts/fix-league-1.ts",
