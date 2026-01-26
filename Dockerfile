@@ -64,6 +64,8 @@ EXPOSE 3000
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HOST=0.0.0.0
+ENV ORIGIN=http://localhost:3000
 ENV DATABASE_PATH=/app/database/wingspan.db
 
 # Health check

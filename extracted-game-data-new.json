@@ -2,45 +2,45 @@
   "gameData": {
     "players": [
       {
-        "playerName": "Blabberman23",
+        "playerName": "hotnut",
         "placement": 1,
-        "totalScore": 135,
+        "totalScore": 102,
         "scoringBreakdown": {
-          "birds": 21,
-          "bonusCards": 6,
-          "endOfRoundGoals": 3,
-          "eggs": 0,
-          "foodOnCards": 20,
-          "tuckedCards": 83,
-          "nectar": 2
+          "birds": 61,
+          "bonusCards": 16,
+          "endOfRoundGoals": 5,
+          "eggs": 8,
+          "foodOnCards": 0,
+          "tuckedCards": 0,
+          "nectar": 12
         }
       },
       {
-        "playerName": "hotnut",
+        "playerName": "blabberman23",
         "placement": 2,
-        "totalScore": 123,
+        "totalScore": 94,
         "scoringBreakdown": {
-          "birds": 39,
-          "bonusCards": 7,
-          "endOfRoundGoals": 10,
-          "eggs": 4,
-          "foodOnCards": 2,
-          "tuckedCards": 46,
-          "nectar": 15
+          "birds": 45,
+          "bonusCards": 6,
+          "endOfRoundGoals": 12,
+          "eggs": 21,
+          "foodOnCards": 4,
+          "tuckedCards": 3,
+          "nectar": 3
         }
       },
       {
         "playerName": "skycondition",
         "placement": 3,
-        "totalScore": 97,
+        "totalScore": 79,
         "scoringBreakdown": {
-          "birds": 52,
-          "bonusCards": 0,
-          "endOfRoundGoals": 16,
-          "eggs": 16,
-          "foodOnCards": 5,
-          "tuckedCards": 4,
-          "nectar": 4
+          "birds": 56,
+          "bonusCards": 8,
+          "endOfRoundGoals": 5,
+          "eggs": 2,
+          "foodOnCards": 2,
+          "tuckedCards": 0,
+          "nectar": 6
         }
       }
     ]
@@ -48,6 +48,6 @@
   "metadata": {
     "extractedAt": "2026-01-25",
     "source": "Wingspan game score screen",
-    "notes": "Placements determined by total score: Blabberman23 (135) = 1st, hotnut (123) = 2nd, skycondition (97) = 3rd"
+    "notes": "Placements determined by total score: hotnut (102) = 1st, Blabberman23 (94) = 2nd, skycondition (79) = 3rd"
   }
 }

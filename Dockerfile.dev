@@ -25,5 +25,8 @@ RUN mkdir -p /app/database
 # Expose development port
 EXPOSE 5173
 
+# Set environment for container access
+ENV HOST=0.0.0.0
+
 # Default command (can be overridden in docker-compose)
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev", "--", "--host"]

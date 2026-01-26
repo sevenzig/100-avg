@@ -28,6 +28,8 @@ services:
       - DATABASE_PATH=/app/database/wingspan.db
       - JWT_SECRET=${JWT_SECRET}
       - PORT=3000
+      - HOST=0.0.0.0
+      - ORIGIN=${ORIGIN:-http://localhost:3000}
     env_file:
       - .env.production
     restart: unless-stopped

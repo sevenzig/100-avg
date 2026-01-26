@@ -33,6 +33,7 @@ services:
       - DATABASE_PATH=/app/database/wingspan.db
       - JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}
       - PORT=5173
+      - HOST=0.0.0.0
     env_file:
       - .env
     command: npm run dev
