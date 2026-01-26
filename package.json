@@ -13,7 +13,8 @@
 		"migrate": "npx tsx scripts/migrate-to-5-players.ts",
 		"check-db": "npx tsx scripts/check-database.ts",
 		"cleanup": "npx tsx scripts/cleanup-duplicates.ts",
-		"fix-league1": "npx tsx scripts/fix-league-1.ts"
+		"fix-league1": "npx tsx scripts/fix-league-1.ts",
+		"push-db-to-prod": "npx tsx scripts/push-db-to-prod.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^5.2.0",
