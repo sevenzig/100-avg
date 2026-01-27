@@ -45,6 +45,11 @@ services:
       - ORIGIN=${ORIGIN:-https://100avg.phelddagrif.farm}
       - PROTOCOL_HEADER=x-forwarded-proto
       - HOST_HEADER=x-forwarded-host
+      # Increase body size limit for file uploads (12MB = 12582912 bytes)
+      # Default is 512KB, which is too small for image uploads
+      - BODY_SIZE_LIMIT=12582912
+      # Anthropic Claude API key for screenshot parsing
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     restart: unless-stopped
     networks:
       - wingspan-network

@@ -141,7 +141,8 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     ORIGIN=http://localhost:3000 \
     DATABASE_PATH=/app/database/wingspan.db \
-    NODE_OPTIONS="--max-old-space-size=512"
+    NODE_OPTIONS="--max-old-space-size=512" \
+    BODY_SIZE_LIMIT=12582912
 
 # Health check with improved error handling
 # Uses HTTP instead of HTTPS for internal health checks

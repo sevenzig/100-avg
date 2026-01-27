@@ -2,10 +2,20 @@ import Anthropic from '@anthropic-ai/sdk';
 import { env } from '$env/dynamic/private';
 import type { ExtractedGameData, ExtractedPlayer } from '$lib/types/screenshot-upload';
 
-const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+// Initialize Anthropic client with API key validation
+function getAnthropicClient() {
+	const apiKey = env.ANTHROPIC_API_KEY;
+	if (!apiKey) {
+		throw new Error('ANTHROPIC_API_KEY environment variable is not set');
+	}
+	return new Anthropic({ apiKey });
+}
 
 export async function parseScreenshot(imageBuffer: Buffer): Promise<ExtractedGameData> {
 	try {
+		// Get Anthropic client (validates API key)
+		const anthropic = getAnthropicClient();
+
 		// Detect MIME type from buffer
 		const isPNG = imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50;
 		const mimeType = isPNG ? 'image/png' : 'image/jpeg';
@@ -137,14 +147,29 @@ Important:
 		return parsedData;
 	} catch (error) {
 		if (error instanceof Error) {
-			// Handle API rate limits, timeouts, etc.
+			// Handle API key errors
+			if (error.message.includes('ANTHROPIC_API_KEY') || error.message.includes('api key')) {
+				throw new Error('API key not configured. Please contact the administrator.');
+			}
+			// Handle API rate limits
 			if (error.message.includes('rate limit') || error.message.includes('429')) {
 				throw new Error('API rate limit exceeded. Please try again later.');
 			}
-			if (error.message.includes('timeout')) {
-				throw new Error('Request timed out. Please try again.');
+			// Handle timeouts
+			if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+				throw new Error('Request timed out. The image processing is taking too long. Please try again.');
+			}
+			// Handle authentication errors
+			if (error.message.includes('401') || error.message.includes('authentication')) {
+				throw new Error('API authentication failed. Please contact the administrator.');
+			}
+			// Handle network errors
+			if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
+				throw new Error('Cannot connect to API service. Please check your connection and try again.');
 			}
 		}
+		// Re-throw with original error for logging
+		console.error('Image parsing error:', error);
 		throw error;
 	}
 }

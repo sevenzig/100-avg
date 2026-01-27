@@ -7,6 +7,8 @@ const config = {
 	kit: {
 		adapter: adapter({
 			out: 'build'
+			// Note: Body size limit is controlled by BODY_SIZE_LIMIT environment variable
+			// Set in docker-compose.prod.yml and .env.production (12MB = 12582912 bytes)
 		})
 	}
 };

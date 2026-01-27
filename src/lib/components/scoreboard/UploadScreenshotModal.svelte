@@ -185,14 +185,59 @@
 			formData.append('image', selectedFile);
 			formData.append('leagueId', leagueId.toString());
 
-			const response = await fetch('/api/games/upload-screenshot', {
-				method: 'POST',
-				body: formData
-			});
+			// Create AbortController for timeout handling
+			const controller = new AbortController();
+			const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
-			const data = await response.json();
+			let response: Response;
+			try {
+				response = await fetch('/api/games/upload-screenshot', {
+					method: 'POST',
+					body: formData,
+					signal: controller.signal
+				});
+			} catch (fetchError: any) {
+				clearTimeout(timeoutId);
+				// Handle network errors, timeouts, and abort errors
+				if (fetchError.name === 'AbortError') {
+					error = 'Request timed out. The image may be too large or the server is taking too long to process. Please try again.';
+				} else if (fetchError.name === 'TypeError' && fetchError.message.includes('fetch')) {
+					error = 'Network error. Please check your connection and try again.';
+				} else {
+					error = `Upload failed: ${fetchError.message || 'Unknown error'}`;
+				}
+				console.error('Fetch error:', fetchError);
+				return;
+			} finally {
+				clearTimeout(timeoutId);
+			}
 
-			if (!response.ok || !data.success) {
+			// Check if response is ok before parsing
+			if (!response.ok) {
+				// Try to parse error response, but handle non-JSON responses
+				let errorMessage = 'Failed to process screenshot';
+				try {
+					const errorData = await response.json();
+					errorMessage = errorData.error || errorMessage;
+				} catch {
+					// If response isn't JSON, use status text
+					errorMessage = response.statusText || `Server error (${response.status})`;
+				}
+				error = errorMessage;
+				return;
+			}
+
+			// Parse JSON response
+			let data: any;
+			try {
+				data = await response.json();
+			} catch (parseError) {
+				error = 'Invalid response from server. Please try again.';
+				console.error('JSON parse error:', parseError);
+				return;
+			}
+
+			if (!data.success) {
 				error = data.error || 'Failed to process screenshot';
 				return;
 			}
@@ -222,8 +267,15 @@
 
 			// Load users for player matching
 			await loadAllUsers();
-		} catch (e) {
-			error = 'Failed to upload screenshot. Please try again.';
+		} catch (e: any) {
+			// Catch any other unexpected errors
+			if (e.name === 'AbortError') {
+				error = 'Request timed out. Please try again.';
+			} else if (e.name === 'TypeError' && e.message.includes('fetch')) {
+				error = 'Network error. Please check your connection and try again.';
+			} else {
+				error = `Upload failed: ${e.message || 'Unknown error'}. Please try again.`;
+			}
 			console.error('Upload error:', e);
 		} finally {
 			uploading = false;
