@@ -382,7 +382,7 @@
 							title="Birds - Average points from bird cards played"
 							on:click={() => handleSort('birds')}
 						>
-							B
+							<span class="text-xs sm:text-[10px]">Birds</span>
 							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('birds') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								{#if getSortIcon('birds') === 'asc'}
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
@@ -401,7 +401,7 @@
 							title="Bonus Cards - Average points from bonus card objectives"
 							on:click={() => handleSort('bonusCards')}
 						>
-							C
+							<span class="text-xs sm:text-[10px]">Bonus</span>
 							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('bonusCards') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								{#if getSortIcon('bonusCards') === 'asc'}
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
@@ -420,7 +420,7 @@
 							title="End of Round Goals - Average points from round-end goal achievements"
 							on:click={() => handleSort('endOfRoundGoals')}
 						>
-							G
+							<span class="text-xs sm:text-[10px]">Goals</span>
 							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('endOfRoundGoals') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								{#if getSortIcon('endOfRoundGoals') === 'asc'}
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
@@ -439,7 +439,7 @@
 							title="Eggs - Average points from eggs laid on bird cards"
 							on:click={() => handleSort('eggs')}
 						>
-							E
+							<span class="text-xs sm:text-[10px]">Eggs</span>
 							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('eggs') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								{#if getSortIcon('eggs') === 'asc'}
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
@@ -458,7 +458,7 @@
 							title="Food on Cards - Average points from food tokens on bird cards"
 							on:click={() => handleSort('foodOnCards')}
 						>
-							F
+							<span class="text-xs sm:text-[10px]">Cache</span>
 							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('foodOnCards') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								{#if getSortIcon('foodOnCards') === 'asc'}
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
@@ -477,7 +477,7 @@
 							title="Tucked Cards - Average points from cards tucked under bird cards"
 							on:click={() => handleSort('tuckedCards')}
 						>
-							T
+							<span class="text-xs sm:text-[10px]">Tucked</span>
 							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('tuckedCards') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								{#if getSortIcon('tuckedCards') === 'asc'}
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
@@ -496,7 +496,7 @@
 							title="Nectar - Average points from nectar tokens (Oceania expansion)"
 							on:click={() => handleSort('nectar')}
 						>
-							N
+							<span class="text-xs sm:text-[10px]">Nectar</span>
 							<svg class="w-4 h-4 sm:w-3 sm:h-3 {getSortIcon('nectar') === 'neutral' ? 'text-slate-400' : 'text-slate-900'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								{#if getSortIcon('nectar') === 'asc'}
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
@@ -566,7 +566,7 @@
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-blue-50 text-blue-700 group-hover:bg-blue-100 active:bg-blue-200 transition-colors cursor-pointer"
 												title={`Birds - Average points from bird cards played (Avg: ${stat.avgBreakdown.birds.toFixed(1)} pts)`}
 											>
-												<div class="font-semibold leading-tight">B</div>
+												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Birds</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
 													{stat.avgBreakdown.birds.toFixed(1)}
 												</div>
@@ -575,7 +575,7 @@
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-green-50 text-green-700 group-hover:bg-green-100 active:bg-green-200 transition-colors cursor-pointer"
 												title={`Bonus Cards - Average points from bonus card objectives (Avg: ${stat.avgBreakdown.bonusCards.toFixed(1)} pts)`}
 											>
-												<div class="font-semibold leading-tight">C</div>
+												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Bonus</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
 													{stat.avgBreakdown.bonusCards.toFixed(1)}
 												</div>
@@ -584,7 +584,7 @@
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-yellow-50 text-yellow-700 group-hover:bg-yellow-100 active:bg-yellow-200 transition-colors cursor-pointer"
 												title={`End of Round Goals - Average points from round-end goal achievements (Avg: ${stat.avgBreakdown.endOfRoundGoals.toFixed(1)} pts)`}
 											>
-												<div class="font-semibold leading-tight">G</div>
+												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Goals</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
 													{stat.avgBreakdown.endOfRoundGoals.toFixed(1)}
 												</div>
@@ -593,7 +593,7 @@
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-amber-50 text-amber-700 group-hover:bg-amber-100 active:bg-amber-200 transition-colors cursor-pointer"
 												title={`Eggs - Average points from eggs laid on bird cards (Avg: ${stat.avgBreakdown.eggs.toFixed(1)} pts)`}
 											>
-												<div class="font-semibold leading-tight">E</div>
+												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Eggs</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
 													{stat.avgBreakdown.eggs.toFixed(1)}
 												</div>
@@ -602,7 +602,7 @@
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-red-50 text-red-700 group-hover:bg-red-100 active:bg-red-200 transition-colors cursor-pointer"
 												title={`Food on Cards - Average points from food tokens on bird cards (Avg: ${stat.avgBreakdown.foodOnCards.toFixed(1)} pts)`}
 											>
-												<div class="font-semibold leading-tight">F</div>
+												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Cache</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
 													{stat.avgBreakdown.foodOnCards.toFixed(1)}
 												</div>
@@ -611,7 +611,7 @@
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-purple-50 text-purple-700 group-hover:bg-purple-100 active:bg-purple-200 transition-colors cursor-pointer"
 												title={`Tucked Cards - Average points from cards tucked under bird cards (Avg: ${stat.avgBreakdown.tuckedCards.toFixed(1)} pts)`}
 											>
-												<div class="font-semibold leading-tight">T</div>
+												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Tucked</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
 													{stat.avgBreakdown.tuckedCards.toFixed(1)}
 												</div>
@@ -620,7 +620,7 @@
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-pink-50 text-pink-700 group-hover:bg-pink-100 active:bg-pink-200 transition-colors cursor-pointer"
 												title={`Nectar - Average points from nectar tokens, Oceania expansion (Avg: ${stat.avgBreakdown.nectar.toFixed(1)} pts)`}
 											>
-												<div class="font-semibold leading-tight">N</div>
+												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Nectar</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
 													{stat.avgBreakdown.nectar.toFixed(1)}
 												</div>
@@ -814,31 +814,31 @@
 														</div>
 														<div class="grid grid-cols-7 gap-1 text-[10px] mt-1.5">
 															<div class="text-center">
-																<div class="text-slate-500">B</div>
+																<div class="text-slate-500 text-[9px]">Birds</div>
 																<div class="font-mono font-semibold text-blue-700">{scoreDetail.breakdown.birds}</div>
 															</div>
 															<div class="text-center">
-																<div class="text-slate-500">C</div>
+																<div class="text-slate-500 text-[9px]">Bonus</div>
 																<div class="font-mono font-semibold text-green-700">{scoreDetail.breakdown.bonusCards}</div>
 															</div>
 															<div class="text-center">
-																<div class="text-slate-500">G</div>
+																<div class="text-slate-500 text-[9px]">Goals</div>
 																<div class="font-mono font-semibold text-yellow-700">{scoreDetail.breakdown.endOfRoundGoals}</div>
 															</div>
 															<div class="text-center">
-																<div class="text-slate-500">E</div>
+																<div class="text-slate-500 text-[9px]">Eggs</div>
 																<div class="font-mono font-semibold text-amber-700">{scoreDetail.breakdown.eggs}</div>
 															</div>
 															<div class="text-center">
-																<div class="text-slate-500">F</div>
+																<div class="text-slate-500 text-[9px]">Cache</div>
 																<div class="font-mono font-semibold text-red-700">{scoreDetail.breakdown.foodOnCards}</div>
 															</div>
 															<div class="text-center">
-																<div class="text-slate-500">T</div>
+																<div class="text-slate-500 text-[9px]">Tucked</div>
 																<div class="font-mono font-semibold text-purple-700">{scoreDetail.breakdown.tuckedCards}</div>
 															</div>
 															<div class="text-center">
-																<div class="text-slate-500">N</div>
+																<div class="text-slate-500 text-[9px]">Nectar</div>
 																<div class="font-mono font-semibold text-pink-700">{scoreDetail.breakdown.nectar}</div>
 															</div>
 														</div>
