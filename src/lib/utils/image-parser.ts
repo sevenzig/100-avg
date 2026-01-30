@@ -7,13 +7,16 @@ import type { ExtractedGameData, ExtractedPlayer } from '$lib/types/screenshot-u
 const ANTHROPIC_MAX_BASE64_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_RAW_BYTES = Math.floor((ANTHROPIC_MAX_BASE64_BYTES * 3) / 4) - 1024 * 100; // ~3.65 MB with margin
 
+/** Vision requests can take 30–90+ seconds; use 2 minutes so the SDK doesn’t time out. */
+const VISION_REQUEST_TIMEOUT_MS = 120000;
+
 // Initialize Anthropic client with API key validation
 function getAnthropicClient() {
 	const apiKey = env.ANTHROPIC_API_KEY;
 	if (!apiKey) {
 		throw new Error('ANTHROPIC_API_KEY environment variable is not set');
 	}
-	return new Anthropic({ apiKey });
+	return new Anthropic({ apiKey, timeout: VISION_REQUEST_TIMEOUT_MS });
 }
 
 /** Resize/compress image so raw size is under MAX_RAW_BYTES for Claude API. */
@@ -64,11 +67,12 @@ export async function parseScreenshot(imageBuffer: Buffer): Promise<ExtractedGam
 		console.log(`[ImageParser] Starting Claude API request (image size: ${buffer.length} bytes, base64: ${base64Image.length} chars)`);
 
 		const apiStartTime = Date.now();
-		const response = await anthropic.messages.create({
-			model: 'claude-3-5-sonnet-20241022',
-			max_tokens: 4096,
-			timeout: 60000, // Increased to 60 seconds to allow more processing time
-			messages: [
+		// Use current vision-capable Sonnet model (claude-3-5-sonnet-20241022 is deprecated/404)
+		const response = await anthropic.messages.create(
+			{
+				model: 'claude-sonnet-4-5-20250929',
+				max_tokens: 4096,
+				messages: [
 				{
 					role: 'user',
 					content: [
@@ -111,7 +115,9 @@ Important:
 					]
 				}
 			]
-		});
+			},
+			{ timeout: VISION_REQUEST_TIMEOUT_MS }
+		);
 		const apiTime = Date.now() - apiStartTime;
 		console.log(`[ImageParser] Claude API responded in ${apiTime}ms`);
 
@@ -217,6 +223,15 @@ Important:
 			// Handle authentication errors
 			if (error.message.includes('401') || error.message.includes('authentication')) {
 				throw new Error('API authentication failed. Please contact the administrator.');
+			}
+			// Handle model not found (404 — model ID may be deprecated)
+			if (
+				error.message.includes('not_found_error') ||
+				(error.message.includes('404') && error.message.includes('model'))
+			) {
+				throw new Error(
+					'Screenshot processing model is unavailable. Please contact the administrator to update the app.'
+				);
 			}
 			// Handle network errors
 			if (error.message.includes('ENOTFOUND') || error.message.includes('ECONNREFUSED')) {
