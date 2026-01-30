@@ -1,6 +1,11 @@
 import Anthropic from '@anthropic-ai/sdk';
+import sharp from 'sharp';
 import { env } from '$env/dynamic/private';
 import type { ExtractedGameData, ExtractedPlayer } from '$lib/types/screenshot-upload';
+
+/** Anthropic limits base64 images to 5 MB. Raw buffer must stay under ~3.75 MB to fit. */
+const ANTHROPIC_MAX_BASE64_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_RAW_BYTES = Math.floor((ANTHROPIC_MAX_BASE64_BYTES * 3) / 4) - 1024 * 100; // ~3.65 MB with margin
 
 // Initialize Anthropic client with API key validation
 function getAnthropicClient() {
@@ -11,17 +16,52 @@ function getAnthropicClient() {
 	return new Anthropic({ apiKey });
 }
 
+/** Resize/compress image so raw size is under MAX_RAW_BYTES for Claude API. */
+async function resizeToFitLimit(buffer: Buffer): Promise<{ buffer: Buffer; mimeType: string }> {
+	const meta = await sharp(buffer).metadata();
+	let width = meta.width ?? 1920;
+	let height = meta.height ?? 1080;
+	let quality = 85;
+
+	for (let attempt = 0; attempt < 8; attempt++) {
+		const out = await sharp(buffer)
+			.resize(Math.min(width, 2048), Math.min(height, 2048), { fit: 'inside', withoutEnlargement: true })
+			.jpeg({ quality, mozjpeg: true })
+			.toBuffer();
+		if (out.length <= MAX_RAW_BYTES) {
+			console.log(
+				`[ImageParser] Resized image from ${buffer.length} to ${out.length} bytes (${width}x${height}, q${quality})`
+			);
+			return { buffer: out, mimeType: 'image/jpeg' };
+		}
+		width = Math.floor(width * 0.75);
+		height = Math.floor(height * 0.75);
+		quality = Math.max(50, quality - 10);
+	}
+	// Last resort: aggressive shrink
+	const out = await sharp(buffer).resize(1280, 720, { fit: 'inside' }).jpeg({ quality: 70 }).toBuffer();
+	console.log(`[ImageParser] Aggressive resize to ${out.length} bytes`);
+	return { buffer: out, mimeType: 'image/jpeg' };
+}
+
 export async function parseScreenshot(imageBuffer: Buffer): Promise<ExtractedGameData> {
 	const startTime = Date.now();
 	try {
+		// Ensure image is under Claude's 5 MB base64 limit by resizing if needed
+		let buffer = imageBuffer;
+		let mimeType: string =
+			imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50 ? 'image/png' : 'image/jpeg';
+		if (imageBuffer.length > MAX_RAW_BYTES) {
+			const resized = await resizeToFitLimit(imageBuffer);
+			buffer = resized.buffer;
+			mimeType = resized.mimeType;
+		}
+
 		// Get Anthropic client (validates API key)
 		const anthropic = getAnthropicClient();
 
-		// Detect MIME type from buffer
-		const isPNG = imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50;
-		const mimeType = isPNG ? 'image/png' : 'image/jpeg';
-		const base64Image = imageBuffer.toString('base64');
-		console.log(`[ImageParser] Starting Claude API request (image size: ${imageBuffer.length} bytes, base64: ${base64Image.length} chars)`);
+		const base64Image = buffer.toString('base64');
+		console.log(`[ImageParser] Starting Claude API request (image size: ${buffer.length} bytes, base64: ${base64Image.length} chars)`);
 
 		const apiStartTime = Date.now();
 		const response = await anthropic.messages.create({
@@ -36,7 +76,7 @@ export async function parseScreenshot(imageBuffer: Buffer): Promise<ExtractedGam
 							type: 'image',
 							source: {
 								type: 'base64',
-								media_type: mimeType,
+								media_type: mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
 								data: base64Image
 							}
 						},
@@ -152,6 +192,16 @@ Important:
 		return parsedData;
 	} catch (error) {
 		if (error instanceof Error) {
+			// Handle image size limit (5 MB base64) — should be prevented by resize; surface clear message if it slips through
+			if (
+				error.message.includes('exceeds 5 MB') ||
+				error.message.includes('5242880') ||
+				error.message.includes('image exceeds')
+			) {
+				throw new Error(
+					'Image is too large for processing. Please try a smaller screenshot or a different image.'
+				);
+			}
 			// Handle API key errors
 			if (error.message.includes('ANTHROPIC_API_KEY') || error.message.includes('api key')) {
 				throw new Error('API key not configured. Please contact the administrator.');
