@@ -1,6 +1,11 @@
 /** @type {import('tailwindcss').Config} */
 export default {
 	content: ['./src/**/*.{html,js,svelte,ts}'],
+	// Optimize for faster builds
+	corePlugins: {
+		// Disable unused core plugins for faster compilation
+		preflight: true
+	},
 	theme: {
 		extend: {
 			colors: {

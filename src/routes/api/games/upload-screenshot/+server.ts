@@ -8,6 +8,7 @@ import { parseScreenshot, calculateConfidence, extractWarnings } from '$lib/util
 import type { ExtractedGameData } from '$lib/types/screenshot-upload';
 
 export const POST: RequestHandler = async ({ request, cookies }) => {
+	const startTime = Date.now();
 	const userId = getUserId(cookies);
 	if (!userId) {
 		return json({ success: false, error: 'Not authenticated' }, { status: 401 });
@@ -26,6 +27,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	}
 
 	try {
+		console.log(`[Upload] Starting screenshot upload for user ${userId} at ${new Date().toISOString()}`);
 		// SvelteKit uses request.formData() for multipart/form-data
 		const formData = await request.formData();
 		const file = formData.get('image') as File;
@@ -76,11 +78,17 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		}
 
 		// Convert File to Buffer for processing
+		const bufferStartTime = Date.now();
 		const arrayBuffer = await file.arrayBuffer();
 		const imageBuffer = Buffer.from(arrayBuffer);
+		const bufferTime = Date.now() - bufferStartTime;
+		console.log(`[Upload] File converted to buffer in ${bufferTime}ms (size: ${imageBuffer.length} bytes)`);
 
 		// Parse screenshot
+		const parseStartTime = Date.now();
 		const extractedData = await parseScreenshot(imageBuffer);
+		const parseTime = Date.now() - parseStartTime;
+		console.log(`[Upload] Screenshot parsed in ${parseTime}ms`);
 
 		// Sanitize player names
 		for (const player of extractedData.players) {
@@ -92,6 +100,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const warnings = extractWarnings(extractedData);
 
 		// Return extracted data for user review
+		const totalTime = Date.now() - startTime;
+		console.log(`[Upload] Upload completed successfully in ${totalTime}ms for user ${userId}`);
 		return json({
 			success: true,
 			extractedData,
@@ -99,8 +109,19 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			warnings: warnings.length > 0 ? warnings : undefined
 		});
 	} catch (error) {
-		console.error('Upload screenshot error:', error);
+		const totalTime = Date.now() - startTime;
+		console.error(`[Upload] Upload failed after ${totalTime}ms for user ${userId}:`, error);
 		if (error instanceof Error) {
+			// Provide more specific error messages for timeout issues
+			if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+				return json(
+					{
+						success: false,
+						error: `Request timed out after ${totalTime}ms. The reverse proxy timeout may be too short. Please contact the administrator to increase the proxy timeout to at least 90 seconds.`
+					},
+					{ status: 504 } // Gateway Timeout
+				);
+			}
 			return json({ success: false, error: error.message }, { status: 500 });
 		}
 		return json({ success: false, error: 'Internal server error' }, { status: 500 });

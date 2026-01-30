@@ -280,11 +280,11 @@
 <div class="h-screen flex flex-col bg-slate-50">
 	<!-- Compact Header -->
 	{#if $currentLeague}
-		<div class="flex items-center justify-between px-3 sm:px-6 py-3 bg-white border-b border-slate-200 shrink-0">
-			<h1 class="text-lg sm:text-xl font-bold text-slate-900">{$currentLeague.name}</h1>
-			<div class="flex gap-2">
-				<Button variant="ghost" size="sm" on:click={handleUploadScreenshot}>📷 Upload Screenshot</Button>
-				<Button variant="primary" size="sm" on:click={handleAddGame}>+ Add Game</Button>
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-3 bg-white border-b border-slate-200 shrink-0">
+			<h1 class="text-lg sm:text-xl font-bold text-slate-900 truncate">{$currentLeague.name}</h1>
+			<div class="flex gap-2 flex-shrink-0">
+				<Button variant="ghost" size="sm" on:click={handleUploadScreenshot} className="flex-1 sm:flex-initial">📷 Upload Screenshot</Button>
+				<Button variant="primary" size="sm" on:click={handleAddGame} className="flex-1 sm:flex-initial">+ Add Game</Button>
 			</div>
 		</div>
 	{/if}
@@ -304,9 +304,9 @@
 			<div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col shrink-0" style="max-height: 50%;">
 				<!-- Table Header -->
 				<div class="bg-slate-50 border-b border-slate-200 px-2 sm:px-4 py-2 shrink-0">
-					<div class="grid grid-cols-12 gap-1 sm:gap-2 text-sm sm:text-xs font-semibold text-slate-600 uppercase tracking-wider">
+					<div class="grid grid-cols-12 gap-1 sm:gap-2 text-sm sm:text-xs font-semibold text-slate-600 uppercase tracking-wider min-h-[2.75rem] items-center">
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5 px-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-0.5 px-1 min-h-[2.75rem] touch-manipulation rounded"
 							on:click={() => handleSort('rank')}
 						>
 							<span class="text-xs sm:text-[10px]">Rank</span>
@@ -324,7 +324,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-2 text-left hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1"
+							class="col-span-2 text-left hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							on:click={() => handleSort('player')}
 						>
 							Player
@@ -342,7 +342,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							on:click={() => handleSort('avgPlacement')}
 						>
 							Avg Pl
@@ -360,7 +360,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							on:click={() => handleSort('avgScore')}
 						>
 							Avg
@@ -378,7 +378,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							title="Birds - Average points from bird cards played"
 							on:click={() => handleSort('birds')}
 						>
@@ -397,7 +397,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							title="Bonus Cards - Average points from bonus card objectives"
 							on:click={() => handleSort('bonusCards')}
 						>
@@ -416,7 +416,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							title="End of Round Goals - Average points from round-end goal achievements"
 							on:click={() => handleSort('endOfRoundGoals')}
 						>
@@ -435,7 +435,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							title="Eggs - Average points from eggs laid on bird cards"
 							on:click={() => handleSort('eggs')}
 						>
@@ -454,7 +454,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							title="Food on Cards - Average points from food tokens on bird cards"
 							on:click={() => handleSort('foodOnCards')}
 						>
@@ -473,7 +473,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							title="Tucked Cards - Average points from cards tucked under bird cards"
 							on:click={() => handleSort('tuckedCards')}
 						>
@@ -492,7 +492,7 @@
 							</svg>
 						</button>
 						<button
-							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1"
+							class="col-span-1 text-center hover:text-slate-900 active:text-slate-900 active:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1 min-h-[2.75rem] touch-manipulation rounded"
 							title="Nectar - Average points from nectar tokens (Oceania expansion)"
 							on:click={() => handleSort('nectar')}
 						>
@@ -521,7 +521,7 @@
 							<div
 								role="button"
 								tabindex="0"
-								class="px-2 sm:px-4 py-2 hover:bg-slate-50 active:bg-slate-100 transition-colors duration-150 cursor-pointer group"
+								class="px-2 sm:px-4 py-3 min-h-[2.75rem] hover:bg-slate-50 active:bg-slate-100 transition-colors duration-150 cursor-pointer group touch-manipulation"
 								on:click={() => (hoveredPlayerId = hoveredPlayerId === stat.userId ? null : stat.userId)}
 								on:keydown={(e) => {
 									if (e.key === 'Enter' || e.key === ' ') {
@@ -709,7 +709,7 @@
 										<div class="mt-3 pt-3 border-t border-slate-200">
 											<a
 												href="/profile/{stat.userId}"
-												class="block text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+												class="flex items-center justify-center min-h-[2.75rem] text-center text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors touch-manipulation"
 												on:click|stopPropagation={(e) => {
 													// Allow navigation, but prevent row toggle
 												}}
@@ -727,8 +727,16 @@
 
 			<!-- Recent Games - Full Width -->
 			<div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden shrink-0">
-				<div class="bg-slate-50 border-b border-slate-200 px-2 sm:px-4 py-2 shrink-0">
+				<div class="bg-slate-50 border-b border-slate-200 px-2 sm:px-4 py-2 shrink-0 flex items-center justify-between">
 					<h3 class="text-sm sm:text-xs font-semibold text-slate-600 uppercase tracking-wider">Recent Games</h3>
+					{#if gameHistory.length > 0}
+						<a
+							href="/leagues/{leagueId}/all-games"
+							class="inline-flex items-center min-h-[2.75rem] px-2 text-xs text-blue-600 hover:text-blue-700 font-medium touch-manipulation"
+						>
+							View all games →
+						</a>
+					{/if}
 				</div>
 				<div class="p-2 sm:p-4">
 					{#if gameHistory.length > 0}
@@ -738,7 +746,7 @@
 								<div
 									role="button"
 									tabindex="0"
-									class="border border-slate-200 rounded-lg p-2 sm:p-3 hover:border-slate-300 hover:shadow-md active:border-slate-400 active:shadow-lg transition-all duration-150 cursor-pointer relative group"
+									class="border border-slate-200 rounded-lg p-3 sm:p-4 min-h-[2.75rem] hover:border-slate-300 hover:shadow-md active:border-slate-400 active:shadow-lg transition-all duration-150 cursor-pointer relative group touch-manipulation"
 									on:mouseenter={() => {
 										hoveredGameId = game.id;
 										loadGameDetails(game.id);

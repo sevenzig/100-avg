@@ -49,7 +49,7 @@ interface GameData {
 }
 
 async function importGameData() {
-	console.log('🔗 Importing game data from image...');
+	console.log('🔗 Importing game data from extracted image...');
 
 	const database = getDb();
 
@@ -59,7 +59,7 @@ async function importGameData() {
 
 	const players = gameData.gameData.players;
 	
-	// Use league ID 1
+	// Use league ID 1 (same as existing script)
 	const targetLeagueId = 1;
 	
 	// Get league name from database or use default
@@ -84,13 +84,35 @@ async function importGameData() {
 			const userIds: Map<string, number> = new Map();
 
 			for (const player of players) {
+				// Find user by name, checking username and all platform aliases
 				const existingUser = database
-					.prepare('SELECT id, username FROM users WHERE username = ? COLLATE NOCASE')
-					.get(player.playerName) as { id: number; username: string } | undefined;
+					.prepare(
+						`
+					SELECT id, username
+					FROM users
+					WHERE LOWER(TRIM(username)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(steam_alias)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(android_alias)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(iphone_alias)) = LOWER(TRIM(?))
+					LIMIT 1
+				`
+					)
+					.get(
+						player.playerName,
+						player.playerName,
+						player.playerName,
+						player.playerName
+					) as { id: number; username: string } | undefined;
 
 				if (existingUser) {
 					userIds.set(player.playerName, existingUser.id);
-					console.log(`   ✓ User "${player.playerName}" exists (ID: ${existingUser.id}, stored as "${existingUser.username}")`);
+					const matchedName =
+						existingUser.username.toLowerCase() === player.playerName.toLowerCase()
+							? existingUser.username
+							: `${existingUser.username} (matched via alias)`;
+					console.log(
+						`   ✓ User "${player.playerName}" found (ID: ${existingUser.id}, username: "${matchedName}")`
+					);
 				} else {
 					throw new Error(
 						`User "${player.playerName}" does not exist. Please create users first.`

@@ -534,7 +534,7 @@
 							<div>
 								<label
 									for="file-upload"
-									class="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+									class="cursor-pointer inline-flex items-center justify-center min-h-[2.75rem] px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 touch-manipulation"
 								>
 									Select a file
 								</label>

@@ -113,10 +113,22 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			} else if (score.userId) {
 				scoreUserId = score.userId;
 			} else if (score.username) {
-				// Try to find user by username
+				// Try to find user by username or platform aliases
 				const foundUser = db
-					.prepare('SELECT id FROM users WHERE username = ?')
-					.get(score.username) as { id: number } | undefined;
+					.prepare(
+						`
+					SELECT id
+					FROM users
+					WHERE LOWER(TRIM(username)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(steam_alias)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(android_alias)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(iphone_alias)) = LOWER(TRIM(?))
+					LIMIT 1
+				`
+					)
+					.get(score.username, score.username, score.username, score.username) as
+					| { id: number }
+					| undefined;
 
 				if (!foundUser) {
 					return json(

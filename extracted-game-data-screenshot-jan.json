@@ -1,0 +1,82 @@
+{
+  "games": [
+    {
+      "gameData": {
+        "players": [
+          {
+            "playerName": "Blabberman23",
+            "placement": 1,
+            "totalScore": 93,
+            "scoringBreakdown": {
+              "birds": 44,
+              "bonusCards": 0,
+              "endOfRoundGoals": 20,
+              "eggs": 12,
+              "foodOnCards": 7,
+              "tuckedCards": 0,
+              "nectar": 10
+            }
+          },
+          {
+            "playerName": "skycondition",
+            "placement": 2,
+            "totalScore": 75,
+            "scoringBreakdown": {
+              "birds": 32,
+              "bonusCards": 3,
+              "endOfRoundGoals": 9,
+              "eggs": 12,
+              "foodOnCards": 0,
+              "tuckedCards": 9,
+              "nectar": 10
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "extractedAt": "2026-01-29",
+        "source": "Wingspan end-game screenshot - Game 1",
+        "notes": "Two player: Blabberman23 (93) 1st, skycondition (75) 2nd"
+      }
+    },
+    {
+      "gameData": {
+        "players": [
+          {
+            "playerName": "Blabberman23",
+            "placement": 1,
+            "totalScore": 119,
+            "scoringBreakdown": {
+              "birds": 45,
+              "bonusCards": 24,
+              "endOfRoundGoals": 10,
+              "eggs": 12,
+              "foodOnCards": 0,
+              "tuckedCards": 13,
+              "nectar": 15
+            }
+          },
+          {
+            "playerName": "skycondition",
+            "placement": 2,
+            "totalScore": 97,
+            "scoringBreakdown": {
+              "birds": 63,
+              "bonusCards": 3,
+              "endOfRoundGoals": 16,
+              "eggs": 0,
+              "foodOnCards": 9,
+              "tuckedCards": 0,
+              "nectar": 6
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "extractedAt": "2026-01-29",
+        "source": "Wingspan end-game screenshot - Game 2",
+        "notes": "Two player: Blabberman23 (119) 1st, skycondition (97) 2nd"
+      }
+    }
+  ]
+}

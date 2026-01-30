@@ -14,15 +14,15 @@
 	}[variant];
 
 	$: sizeClass = {
-		sm: 'px-3 py-1.5 text-sm',
-		md: 'px-4 py-2 text-base',
-		lg: 'px-6 py-3 text-lg'
+		sm: 'px-3 py-1.5 text-sm min-h-[2.75rem]',
+		md: 'px-4 py-2 text-base min-h-[2.75rem]',
+		lg: 'px-6 py-3 text-lg min-h-[2.75rem]'
 	}[size];
 </script>
 
 <button
 	type={type}
-	class="font-medium rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed {variantClass} {sizeClass} {className}"
+	class="inline-flex items-center justify-center font-medium rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation {variantClass} {sizeClass} {className}"
 	disabled={disabled || loading}
 	on:click
 >

@@ -2,38 +2,38 @@
   "gameData": {
     "players": [
       {
-        "playerName": "Blabberman23",
+        "playerName": "hotnut",
         "placement": 1,
-        "totalScore": 101,
+        "totalScore": 90,
         "scoringBreakdown": {
-          "birds": 47,
-          "bonusCards": 9,
-          "endOfRoundGoals": 15,
-          "eggs": 7,
-          "foodOnCards": 1,
-          "tuckedCards": 12,
-          "nectar": 10
+          "birds": 41,
+          "bonusCards": 12,
+          "endOfRoundGoals": 17,
+          "eggs": 9,
+          "foodOnCards": 0,
+          "tuckedCards": 4,
+          "nectar": 7
         }
       },
       {
         "playerName": "skycondition",
         "placement": 2,
-        "totalScore": 98,
+        "totalScore": 89,
         "scoringBreakdown": {
-          "birds": 53,
-          "bonusCards": 12,
-          "endOfRoundGoals": 15,
-          "eggs": 3,
-          "foodOnCards": 1,
-          "tuckedCards": 4,
+          "birds": 42,
+          "bonusCards": 16,
+          "endOfRoundGoals": 14,
+          "eggs": 2,
+          "foodOnCards": 0,
+          "tuckedCards": 5,
           "nectar": 10
         }
       }
     ]
   },
   "metadata": {
-    "extractedAt": "2026-01-25",
-    "source": "Wingspan game score screen",
-    "notes": "Placements determined by total score: Blabberman23 (101) = 1st, skycondition (98) = 2nd"
+    "extractedAt": "2026-01-28",
+    "source": "Wingspan game score screen - skycondition vs hotnut",
+    "notes": "Two player game from manual screenshot import: hotnut (90) = 1st, skycondition (89) = 2nd. Totals verified: 41+12+17+9+0+4+7 = 90, 42+16+14+2+0+5+10 = 89."
   }
 }

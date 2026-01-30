@@ -46,7 +46,104 @@ Dokploy's reverse proxy (Traefik) cannot reach your application container.
    - Container should be listening on port 3000 inside the container
    - Dokploy/Traefik will proxy external traffic to this port
 
-## 🚨 Issue 2: Let's Encrypt DNS Error
+## 🚨 Issue 2: Request Timeout (500 Error)
+
+### Root Cause
+Dokploy's reverse proxy (Traefik) has a default timeout of ~5 seconds. Long-running requests (like image processing) exceed this timeout and are cut off.
+
+**Symptoms:**
+- HTTP 500 error after ~4-5 seconds
+- Error message: "Request timed out. The image processing is taking too long."
+- Request fails even though the application is processing correctly
+
+### Solution: Increase Traefik Timeout in Dokploy
+
+**Option 1: Configure via Dokploy UI (Recommended)**
+
+1. **In Dokploy Dashboard:**
+   - Navigate to your application
+   - Go to **Settings** → **Advanced** or **Proxy Settings**
+   - Look for **"Request Timeout"** or **"Proxy Timeout"**
+   - Set timeout to **90 seconds** (or higher)
+   - Save settings
+
+2. **If timeout setting is not available in UI:**
+   - Dokploy may use Traefik labels
+   - Check if there's a "Labels" or "Annotations" section
+   - Add Traefik label: `traefik.http.services.<service-name>.loadbalancer.proxy.responseForwarding.flushInterval=1ms`
+   - Or add: `traefik.http.middlewares.timeout.headers.customRequestHeaders.X-Forwarded-Timeout=90s`
+
+**Option 2: Configure via Docker Compose Labels**
+
+If Dokploy allows custom labels, add to your `docker-compose.prod.yml`:
+
+```yaml
+services:
+  app:
+    labels:
+      # Increase Traefik timeout for upload endpoint
+      - "traefik.http.middlewares.upload-timeout.headers.customRequestHeaders.X-Forwarded-Timeout=90s"
+      - "traefik.http.routers.app.middlewares=upload-timeout"
+      # Or use response buffering to prevent early timeout
+      - "traefik.http.middlewares.upload-buffer.buffering.maxResponseBodyBytes=10485760"
+```
+
+**Option 3: Configure Traefik Directly (If you have server access)**
+
+If you have SSH access to the Dokploy server:
+
+```bash
+# Find Traefik container
+docker ps | grep traefik
+
+# Check Traefik configuration
+docker exec <traefik-container> cat /etc/traefik/traefik.yml
+
+# Or check for dynamic configuration
+docker exec <traefik-container> ls -la /etc/traefik/dynamic/
+```
+
+Add to Traefik dynamic configuration:
+
+```yaml
+# /etc/traefik/dynamic/timeout.yml
+http:
+  middlewares:
+    upload-timeout:
+      buffering:
+        maxResponseBodyBytes: 10485760  # 10MB
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Timeout: "90s"
+```
+
+**Option 4: Use Environment Variable (If supported)**
+
+Some Dokploy versions support timeout via environment variable:
+- Add to application environment: `TRAEFIK_TIMEOUT=90s`
+- Or: `PROXY_TIMEOUT=90`
+
+### Verify Timeout Fix
+
+After configuring timeout:
+
+1. **Test upload endpoint:**
+   ```bash
+   curl -X POST https://100avg.phelddagrif.farm/api/games/upload-screenshot \
+     -F "image=@test-image.png" \
+     -F "leagueId=1" \
+     --max-time 120
+   ```
+
+2. **Check server logs:**
+   - Request should complete without timeout error
+   - Processing time should be visible in logs
+
+3. **Monitor in Dokploy:**
+   - Check application logs in Dokploy UI
+   - Verify no timeout errors appear
+
+## 🚨 Issue 3: Let's Encrypt DNS Error
 
 ### Root Cause
 Dokploy tries to use Let's Encrypt, but your domain is on Tailscale (private network).

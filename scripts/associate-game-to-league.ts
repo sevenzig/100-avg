@@ -114,13 +114,35 @@ async function associateGameToLeague() {
 			const userIds: Map<string, number> = new Map();
 
 			for (const player of players) {
+				// Find user by name, checking username and all platform aliases
 				const existingUser = database
-					.prepare('SELECT id FROM users WHERE username = ?')
-					.get(player.playerName) as { id: number } | undefined;
+					.prepare(
+						`
+					SELECT id, username
+					FROM users
+					WHERE LOWER(TRIM(username)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(steam_alias)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(android_alias)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(iphone_alias)) = LOWER(TRIM(?))
+					LIMIT 1
+				`
+					)
+					.get(
+						player.playerName,
+						player.playerName,
+						player.playerName,
+						player.playerName
+					) as { id: number; username: string } | undefined;
 
 				if (existingUser) {
 					userIds.set(player.playerName, existingUser.id);
-					console.log(`   ✓ User "${player.playerName}" exists (ID: ${existingUser.id})`);
+					const matchedName =
+						existingUser.username.toLowerCase() === player.playerName.toLowerCase()
+							? existingUser.username
+							: `${existingUser.username} (matched via alias)`;
+					console.log(
+						`   ✓ User "${player.playerName}" found (ID: ${existingUser.id}, username: "${matchedName}")`
+					);
 				} else {
 					// Create user (we'll need to handle password, but for now use a placeholder)
 					// Actually, let's throw an error - users should exist

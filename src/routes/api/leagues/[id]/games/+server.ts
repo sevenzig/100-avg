@@ -41,63 +41,64 @@ export const GET: RequestHandler = async ({ params, cookies, url }) => {
 		}
 	}
 
-	// Get pagination params
+	// Pagination by games (not rows): limit = games per page
 	const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 100);
 	const offset = parseInt(url.searchParams.get('offset') || '0');
 
-	// Get total count
+	// Get total count of games
 	const totalResult = db
 		.prepare('SELECT COUNT(*) as total FROM games WHERE league_id = ?')
 		.get(leagueId) as { total: number };
 
-	// Get games with scores
-	const games = db
+	// Get game IDs for this page (paginate by games)
+	const gameRows = db
 		.prepare(
 			`
-		SELECT 
-			g.id,
-			g.played_at as playedAt,
-			s.user_id,
-			s.total_score as totalScore
-		FROM 
-			games g
-			JOIN scores s ON s.game_id = g.id
-		WHERE 
-			g.league_id = ?
-		ORDER BY 
-			g.played_at DESC
+		SELECT id, played_at as playedAt
+		FROM games
+		WHERE league_id = ?
+		ORDER BY played_at DESC
 		LIMIT ? OFFSET ?
 	`
 		)
-		.all(leagueId, limit, offset) as Array<{
-		id: number;
-		playedAt: string;
-		user_id: number;
-		totalScore: number;
-	}>;
+		.all(leagueId, limit, offset) as Array<{ id: number; playedAt: string }>;
 
-	// Group scores by game
-	const gamesMap = new Map<
-		number,
-		{ id: number; playedAt: string; scores: Array<{ userId: number; totalScore: number }> }
-	>();
-
-	games.forEach((row) => {
-		if (!gamesMap.has(row.id)) {
-			gamesMap.set(row.id, {
-				id: row.id,
-				playedAt: row.playedAt,
-				scores: []
-			});
-		}
-		gamesMap.get(row.id)!.scores.push({
-			userId: row.user_id,
-			totalScore: row.totalScore
+	if (gameRows.length === 0) {
+		return json({
+			games: [],
+			total: totalResult.total,
+			limit,
+			offset
 		});
-	});
+	}
+
+	// Get all scores for these games (one query, preserves order via game id list)
+	const placeholders = gameRows.map(() => '?').join(',');
+	const gameIds = gameRows.map((r) => r.id);
+	const scoresRows = db
+		.prepare(
+			`
+		SELECT game_id as gameId, user_id as userId, total_score as totalScore
+		FROM scores
+		WHERE game_id IN (${placeholders})
+		ORDER BY game_id, placement
+	`
+		)
+		.all(...gameIds) as Array<{ gameId: number; userId: number; totalScore: number }>;
+
+	// Build games list with playedAt from gameRows, scores from scoresRows
+	const gamesMap = new Map<number, { id: number; playedAt: string; scores: Array<{ userId: number; totalScore: number }> }>();
+	for (const g of gameRows) {
+		gamesMap.set(g.id, { id: g.id, playedAt: g.playedAt, scores: [] });
+	}
+	for (const s of scoresRows) {
+		gamesMap.get(s.gameId)!.scores.push({ userId: s.userId, totalScore: s.totalScore });
+	}
+
+	const games = gameRows.map((r) => gamesMap.get(r.id)!);
 
 	return json({
-		games: Array.from(gamesMap.values()),
+		games,
 		total: totalResult.total,
 		limit,
 		offset

@@ -1,0 +1,252 @@
+{
+  "games": [
+    {
+      "gameData": {
+        "players": [
+          {
+            "playerName": "hotnut",
+            "placement": 1,
+            "totalScore": 111,
+            "scoringBreakdown": {
+              "birds": 42,
+              "bonusCards": 11,
+              "endOfRoundGoals": 6,
+              "eggs": 4,
+              "foodOnCards": 38,
+              "tuckedCards": 0,
+              "nectar": 10
+            }
+          },
+          {
+            "playerName": "skycondition",
+            "placement": 2,
+            "totalScore": 106,
+            "scoringBreakdown": {
+              "birds": 65,
+              "bonusCards": 6,
+              "endOfRoundGoals": 20,
+              "eggs": 3,
+              "foodOnCards": 3,
+              "tuckedCards": 4,
+              "nectar": 5
+            }
+          },
+          {
+            "playerName": "Blabberman23",
+            "placement": 3,
+            "totalScore": 92,
+            "scoringBreakdown": {
+              "birds": 34,
+              "bonusCards": 7,
+              "endOfRoundGoals": 10,
+              "eggs": 9,
+              "foodOnCards": 23,
+              "tuckedCards": 3,
+              "nectar": 6
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "extractedAt": "2026-01-26",
+        "source": "Wingspan game score screen - Game 1",
+        "notes": "Three player game: hotnut (111) = 1st, skycondition (106) = 2nd, Blabberman23 (92) = 3rd"
+      }
+    },
+    {
+      "gameData": {
+        "players": [
+          {
+            "playerName": "Blabberman23",
+            "placement": 1,
+            "totalScore": 112,
+            "scoringBreakdown": {
+              "birds": 51,
+              "bonusCards": 20,
+              "endOfRoundGoals": 17,
+              "eggs": 0,
+              "foodOnCards": 6,
+              "tuckedCards": 6,
+              "nectar": 12
+            }
+          },
+          {
+            "playerName": "skycondition",
+            "placement": 2,
+            "totalScore": 82,
+            "scoringBreakdown": {
+              "birds": 42,
+              "bonusCards": 4,
+              "endOfRoundGoals": 12,
+              "eggs": 14,
+              "foodOnCards": 0,
+              "tuckedCards": 3,
+              "nectar": 7
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "extractedAt": "2026-01-26",
+        "source": "Wingspan game score screen - Game 2",
+        "notes": "Two player game: Blabberman23 (112) = 1st, skycondition (82) = 2nd"
+      }
+    },
+    {
+      "gameData": {
+        "players": [
+          {
+            "playerName": "Blabberman23",
+            "placement": 1,
+            "totalScore": 132,
+            "scoringBreakdown": {
+              "birds": 53,
+              "bonusCards": 27,
+              "endOfRoundGoals": 16,
+              "eggs": 13,
+              "foodOnCards": 0,
+              "tuckedCards": 17,
+              "nectar": 6
+            }
+          },
+          {
+            "playerName": "hotnut",
+            "placement": 2,
+            "totalScore": 116,
+            "scoringBreakdown": {
+              "birds": 53,
+              "bonusCards": 12,
+              "endOfRoundGoals": 10,
+              "eggs": 3,
+              "foodOnCards": 5,
+              "tuckedCards": 18,
+              "nectar": 15
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "extractedAt": "2026-01-26",
+        "source": "Wingspan game score screen - Game 3",
+        "notes": "Two player game: Blabberman23 (132) = 1st, hotnut (116) = 2nd"
+      }
+    },
+    {
+      "gameData": {
+        "players": [
+          {
+            "playerName": "skycondition",
+            "placement": 1,
+            "totalScore": 111,
+            "scoringBreakdown": {
+              "birds": 50,
+              "bonusCards": 19,
+              "endOfRoundGoals": 20,
+              "eggs": 3,
+              "foodOnCards": 1,
+              "tuckedCards": 8,
+              "nectar": 10
+            }
+          },
+          {
+            "playerName": "Blabberman23",
+            "placement": 2,
+            "totalScore": 93,
+            "scoringBreakdown": {
+              "birds": 49,
+              "bonusCards": 12,
+              "endOfRoundGoals": 11,
+              "eggs": 9,
+              "foodOnCards": 0,
+              "tuckedCards": 2,
+              "nectar": 10
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "extractedAt": "2026-01-28",
+        "source": "Wingspan game score screen - Game 4",
+        "notes": "Two player game: skycondition (111) = 1st, Blabberman23 (93) = 2nd"
+      }
+    },
+    {
+      "gameData": {
+        "players": [
+          {
+            "playerName": "Blabberman23",
+            "placement": 1,
+            "totalScore": 113,
+            "scoringBreakdown": {
+              "birds": 39,
+              "bonusCards": 9,
+              "endOfRoundGoals": 19,
+              "eggs": 20,
+              "foodOnCards": 3,
+              "tuckedCards": 16,
+              "nectar": 7
+            }
+          },
+          {
+            "playerName": "skycondition",
+            "placement": 2,
+            "totalScore": 104,
+            "scoringBreakdown": {
+              "birds": 47,
+              "bonusCards": 9,
+              "endOfRoundGoals": 12,
+              "eggs": 14,
+              "foodOnCards": 0,
+              "tuckedCards": 9,
+              "nectar": 13
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "extractedAt": "2026-01-28",
+        "source": "Wingspan game score screen - Game 5",
+        "notes": "Two player game: Blabberman23 (113) = 1st, skycondition (104) = 2nd"
+      }
+    },
+    {
+      "gameData": {
+        "players": [
+          {
+            "playerName": "Blabberman23",
+            "placement": 1,
+            "totalScore": 122,
+            "scoringBreakdown": {
+              "birds": 54,
+              "bonusCards": 25,
+              "endOfRoundGoals": 12,
+              "eggs": 10,
+              "foodOnCards": 6,
+              "tuckedCards": 5,
+              "nectar": 10
+            }
+          },
+          {
+            "playerName": "skycondition",
+            "placement": 2,
+            "totalScore": 102,
+            "scoringBreakdown": {
+              "birds": 44,
+              "bonusCards": 13,
+              "endOfRoundGoals": 8,
+              "eggs": 27,
+              "foodOnCards": 0,
+              "tuckedCards": 10,
+              "nectar": 0
+            }
+          }
+        ]
+      },
+      "metadata": {
+        "extractedAt": "2026-01-28",
+        "source": "Wingspan game score screen - Game 6",
+        "notes": "Two player game: Blabberman23 (122) = 1st, skycondition (102) = 2nd"
+      }
+    }
+  ]
+}

@@ -12,6 +12,7 @@ function getAnthropicClient() {
 }
 
 export async function parseScreenshot(imageBuffer: Buffer): Promise<ExtractedGameData> {
+	const startTime = Date.now();
 	try {
 		// Get Anthropic client (validates API key)
 		const anthropic = getAnthropicClient();
@@ -20,11 +21,13 @@ export async function parseScreenshot(imageBuffer: Buffer): Promise<ExtractedGam
 		const isPNG = imageBuffer[0] === 0x89 && imageBuffer[1] === 0x50;
 		const mimeType = isPNG ? 'image/png' : 'image/jpeg';
 		const base64Image = imageBuffer.toString('base64');
+		console.log(`[ImageParser] Starting Claude API request (image size: ${imageBuffer.length} bytes, base64: ${base64Image.length} chars)`);
 
+		const apiStartTime = Date.now();
 		const response = await anthropic.messages.create({
 			model: 'claude-3-5-sonnet-20241022',
 			max_tokens: 4096,
-			timeout: 30000, // 30 second timeout
+			timeout: 60000, // Increased to 60 seconds to allow more processing time
 			messages: [
 				{
 					role: 'user',
@@ -69,6 +72,8 @@ Important:
 				}
 			]
 		});
+		const apiTime = Date.now() - apiStartTime;
+		console.log(`[ImageParser] Claude API responded in ${apiTime}ms`);
 
 		const content = response.content[0];
 		if (content.type !== 'text') {

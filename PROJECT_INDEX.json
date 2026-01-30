@@ -46,7 +46,8 @@
     },
     "games": {
       "create": "/api/games (POST)",
-      "get": "/api/games/[id] (GET)"
+      "get": "/api/games/[id] (GET)",
+      "uploadScreenshot": "/api/games/upload-screenshot (POST)"
     },
     "users": {
       "list": "/api/users (GET)"
@@ -91,7 +92,7 @@
     "relationships": {
       "users_leagues": "many-to-many via league_players",
       "leagues_games": "one-to-many",
-      "games_scores": "one-to-many (exactly 3 per game)"
+      "games_scores": "one-to-many (1-5 per game)"
     }
   },
   "configuration": {
@@ -120,21 +121,25 @@
   },
   "dependencies": {
     "runtime": {
-      "@sveltejs/kit": "^2.50.1",
-      "svelte": "^4.2.20",
+      "@anthropic-ai/sdk": "^0.71.2",
       "better-sqlite3": "^12.6.2",
       "bcryptjs": "^2.4.3",
-      "jsonwebtoken": "^9.0.3",
       "chart.js": "^4.5.1",
-      "svelte-chartjs": "^3.1.5"
+      "jsonwebtoken": "^9.0.3"
     },
     "dev": {
       "@sveltejs/adapter-node": "^5.2.0",
-      "typescript": "^5.7.2",
-      "tailwindcss": "^3.4.17",
+      "@sveltejs/kit": "^2.50.1",
+      "@sveltejs/vite-plugin-svelte": "^4.0.0",
+      "autoprefixer": "^10.4.20",
       "daisyui": "^4.12.24",
-      "vite": "^5.4.21",
-      "tsx": "^4.19.2"
+      "postcss": "^8.4.47",
+      "svelte": "^5.0.0",
+      "svelte-check": "^3.8.4",
+      "tailwindcss": "^3.4.17",
+      "tsx": "^4.19.2",
+      "typescript": "^5.7.2",
+      "vite": "^5.4.21"
     }
   },
   "features": {
@@ -161,12 +166,12 @@
     ]
   },
   "fileCounts": {
-    "components": 18,
-    "apiRoutes": 10,
-    "scripts": 12,
-    "documentation": 8
+    "components": 22,
+    "apiRoutes": 19,
+    "scripts": 20,
+    "documentation": 36
   },
-  "generated": "2026-01-25",
+  "generated": "2026-01-26",
   "tokenEfficiency": {
     "indexSize": "~3,000 tokens",
     "fullCodebase": "~58,000 tokens",

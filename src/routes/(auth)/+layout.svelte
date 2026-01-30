@@ -12,8 +12,8 @@
 	});
 </script>
 
-<div class="min-h-screen bg-bg-primary flex items-center justify-center p-4">
-	<div class="w-full max-w-md">
+<div class="min-h-screen bg-bg-primary flex items-center justify-center p-4 sm:p-6">
+	<div class="w-full max-w-md min-w-0">
 		<slot />
 	</div>
 </div>

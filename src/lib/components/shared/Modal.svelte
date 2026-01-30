@@ -28,9 +28,9 @@
 
 {#if open}
 	<div class="fixed inset-0 z-50 overflow-y-auto" on:click={handleBackdropClick} role="dialog" aria-modal="true">
-		<div class="flex min-h-full items-center justify-center p-4">
+		<div class="flex min-h-full items-center justify-center p-4 sm:p-6">
 			<div class="fixed inset-0 bg-black/30 transition-opacity" aria-hidden="true"></div>
-			<div class="relative bg-white rounded-lg shadow-xl {sizeClass === 'modal-sm' ? 'max-w-sm' : sizeClass === 'modal-lg' ? 'max-w-3xl' : sizeClass === 'modal-xl' ? 'max-w-5xl' : 'max-w-md'} w-full p-6">
+			<div class="relative bg-white rounded-lg shadow-xl max-h-[90vh] overflow-y-auto {sizeClass === 'modal-sm' ? 'max-w-sm' : sizeClass === 'modal-lg' ? 'max-w-3xl' : sizeClass === 'modal-xl' ? 'max-w-5xl' : 'max-w-md'} w-full p-4 sm:p-6">
 				{#if title}
 					<h3 class="font-bold text-lg text-slate-900 mb-4">{title}</h3>
 				{/if}
