@@ -268,71 +268,71 @@
 </script>
 
 <Modal {open} title="Add Game" size="xl" on:close={handleClose}>
-	<div class="space-y-3 max-h-[80vh] overflow-y-auto">
+	<div class="space-y-4 pb-2">
 		{#if error}
-			<div class="bg-red-50 border border-red-200 rounded-md p-2 text-red-800 text-xs">
+			<div class="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-red-800 text-sm flex items-center gap-2 shrink-0" role="alert">
+				<svg class="w-4 h-4 shrink-0 text-red-500" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+					<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+				</svg>
 				<span>{error}</span>
 			</div>
 		{/if}
 
 		<Input type="date" label="Date Played" bind:value={playedAt} required />
 
-		<div class="border-t border-slate-200 pt-2">
-			<div class="flex items-center justify-between mb-2">
-				<p class="text-slate-600 text-xs font-medium">
-					Players ({selectedPlayers.length}/5)
-				</p>
-				{#if selectedPlayers.length < 5}
-					<Button variant="ghost" size="sm" on:click={addPlayer}>+ Add Player</Button>
-				{/if}
-			</div>
+		<div class="border-t border-slate-200 pt-3 mb-2">
+			{#if selectedPlayers.length < 5}
+				<Button variant="primary" size="md" on:click={addPlayer} className="w-full font-semibold">+ Add Player ({selectedPlayers.length}/5)</Button>
+			{:else}
+				<p class="text-slate-600 text-sm font-medium">Players ({selectedPlayers.length}/5)</p>
+			{/if}
 		</div>
 
 		{#each selectedPlayers as player, index}
 			{@const playerColor = playerColors[index % playerColors.length]}
-			<Card>
-				<div class="flex items-center justify-between mb-2">
+			<Card padding="p-3 sm:p-4">
+				<div class="flex items-center justify-between mb-3">
 					<h4 class="text-sm font-semibold" style="color: {playerColor};">
 						Player {index + 1}
 					</h4>
 					{#if selectedPlayers.length > 1}
-						<Button variant="ghost" size="sm" on:click={() => removePlayer(index)}>Remove</Button>
+						<Button variant="secondary" size="sm" on:click={() => removePlayer(index)} className="border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 font-medium">Remove</Button>
 					{/if}
 				</div>
 
-				<div class="space-y-2">
-					<!-- Player Selection - Compact with colored button on right -->
+				<div class="space-y-3">
+					<!-- Player Selection -->
 					<div>
 						{#if !player.isNew}
-							<label class="block text-xs font-medium text-slate-700 mb-1">
+							<label class="block text-sm font-medium text-slate-700 mb-1.5">
 								Select Player
 							</label>
-							<div class="flex gap-2">
-								<select
-									bind:value={player.userId}
-									on:change={(e) => handleSelectChange(index, e)}
-									class="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								>
-									<option value="">-- Select player --</option>
-									{#each allUsers as user}
-										<option value={user.id}>{user.username}</option>
-									{/each}
-								</select>
+							<div class="flex flex-row gap-2 items-stretch">
 								<Button
 									variant="primary"
 									size="sm"
 									on:click={() => handleNewPlayerToggle(index)}
-									class="shrink-0 whitespace-nowrap"
+									className="shrink-0 whitespace-nowrap"
 									style="background-color: {playerColor}; border-color: {playerColor};"
 								>
 									+ New
 								</Button>
+								<select
+									bind:value={player.userId}
+									on:change={(e) => handleSelectChange(index, e)}
+									class="flex-1 min-h-[2.75rem] px-3 py-2 text-base border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-900 touch-manipulation min-w-0"
+								>
+									<option value="">— Select player —</option>
+									{#each allUsers as user}
+										<option value={user.id}>{user.username}</option>
+									{/each}
+								</select>
 							</div>
 						{:else}
-							<label class="block text-xs font-medium text-slate-700 mb-1">
+							<label class="block text-sm font-medium text-slate-700 mb-1.5">
 								New Player Username
 							</label>
-							<div class="flex gap-2">
+							<div class="flex flex-col sm:flex-row gap-2">
 								<Input
 									type="text"
 									bind:value={player.username}
@@ -344,7 +344,7 @@
 									variant="ghost"
 									size="sm"
 									on:click={() => handleNewPlayerToggle(index)}
-									class="shrink-0 whitespace-nowrap"
+									className="shrink-0 whitespace-nowrap w-full sm:w-auto"
 								>
 									Select
 								</Button>
@@ -352,8 +352,8 @@
 						{/if}
 					</div>
 
-					<!-- Score Inputs - 1 row on desktop, 3 columns on mobile -->
-					<div class="grid grid-cols-3 md:grid-cols-9 gap-1.5">
+					<!-- Score Inputs - 2 rows: Place/Total/Birds/Cards/Goals, then Eggs/Food/Tucked/Nectar -->
+					<div class="grid grid-cols-4 sm:grid-cols-5 gap-2 min-w-0">
 						<Input
 							type="number"
 							label="Place"
@@ -433,8 +433,8 @@
 		{/each}
 	</div>
 
-	<div slot="footer" class="flex gap-2">
-		<Button variant="ghost" on:click={handleClose}>Cancel</Button>
-		<Button variant="primary" {loading} on:click={handleSubmit}>Add Game</Button>
+	<div slot="footer" class="flex flex-col-reverse sm:flex-row gap-2 w-full">
+		<Button variant="ghost" on:click={handleClose} className="w-full sm:w-auto">Cancel</Button>
+		<Button variant="primary" {loading} on:click={handleSubmit} className="w-full sm:w-auto">Add Game</Button>
 	</div>
 </Modal>
