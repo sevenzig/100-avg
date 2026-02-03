@@ -283,6 +283,7 @@
 		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-3 bg-white border-b border-slate-200 shrink-0">
 			<h1 class="text-lg sm:text-xl font-bold text-slate-900 truncate">{$currentLeague.name}</h1>
 			<div class="flex gap-2 flex-shrink-0">
+				<a href="/leagues/{leagueId}/compare" class="inline-flex items-center justify-center font-medium rounded-md transition-colors px-3 py-1.5 text-sm min-h-[2.75rem] bg-transparent text-slate-700 hover:bg-slate-100 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 flex-1 sm:flex-initial">Compare players</a>
 				<Button variant="ghost" size="sm" on:click={handleUploadScreenshot} className="flex-1 sm:flex-initial">📷 Upload Screenshot</Button>
 				<Button variant="primary" size="sm" on:click={handleAddGame} className="flex-1 sm:flex-initial">+ Add Game</Button>
 			</div>
