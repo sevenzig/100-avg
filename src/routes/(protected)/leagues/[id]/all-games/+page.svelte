@@ -2,6 +2,9 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { currentLeague } from '$lib/stores/league';
+	import { user } from '$lib/stores/auth';
+	import EditGameModal from '$lib/components/scoreboard/EditGameModal.svelte';
+	import Button from '$lib/components/shared/Button.svelte';
 
 	type GameSummary = {
 		id: number;
@@ -38,6 +41,16 @@
 	let totalPages = 1;
 	let expandedGameId: number | null = null;
 	let detailedGames: Map<number, GameDetails> = new Map();
+
+	// Edit/Delete state
+	let editModalOpen = false;
+	let editingGame: GameDetails | null = null;
+	let deleteConfirmGameId: number | null = null;
+	let deleteLoading = false;
+	let actionError = '';
+
+	// Check if current user can manage games in this league
+	$: canManageGames = $user?.isSuperAdmin || ($user?.id && $currentLeague?.createdBy === $user.id);
 
 	// Derive league ID from URL path so it's correct on this nested route (/leagues/5/all-games)
 	$: leagueId = (() => {
@@ -136,9 +149,150 @@
 			minute: '2-digit'
 		});
 	}
+
+	function handleEditClick(e: Event, gameId: number) {
+		e.stopPropagation();
+		const gameDetails = detailedGames.get(gameId);
+		if (gameDetails) {
+			editingGame = gameDetails;
+			editModalOpen = true;
+		} else {
+			// Fetch game details first
+			fetch(`/api/games/${gameId}`)
+				.then((res) => res.json())
+				.then((data) => {
+					if (data.game) {
+						detailedGames.set(gameId, data.game);
+						editingGame = data.game;
+						editModalOpen = true;
+					}
+				})
+				.catch((err) => {
+					console.error('Failed to load game for editing:', err);
+					actionError = 'Failed to load game details';
+				});
+		}
+	}
+
+	function handleDeleteClick(e: Event, gameId: number) {
+		e.stopPropagation();
+		deleteConfirmGameId = gameId;
+	}
+
+	function cancelDelete() {
+		deleteConfirmGameId = null;
+	}
+
+	async function confirmDelete() {
+		if (!deleteConfirmGameId) return;
+
+		deleteLoading = true;
+		actionError = '';
+
+		try {
+			const res = await fetch(`/api/games/${deleteConfirmGameId}`, {
+				method: 'DELETE'
+			});
+
+			if (res.ok) {
+				// Remove from local state and refresh
+				detailedGames.delete(deleteConfirmGameId);
+				deleteConfirmGameId = null;
+				await loadPage(currentPage);
+			} else {
+				const data = await res.json();
+				actionError = data.error || 'Failed to delete game';
+			}
+		} catch (err) {
+			console.error('Delete game error:', err);
+			actionError = 'Failed to delete game';
+		} finally {
+			deleteLoading = false;
+		}
+	}
+
+	async function handleEditSubmit(e: CustomEvent) {
+		const { gameId, playedAt, scores } = e.detail;
+		actionError = '';
+
+		try {
+			const res = await fetch(`/api/games/${gameId}`, {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ playedAt, scores })
+			});
+
+			if (res.ok) {
+				const data = await res.json();
+				// Update local cache
+				detailedGames.set(gameId, data.game);
+				editModalOpen = false;
+				editingGame = null;
+				await loadPage(currentPage);
+			} else {
+				const data = await res.json();
+				actionError = data.error || 'Failed to update game';
+			}
+		} catch (err) {
+			console.error('Update game error:', err);
+			actionError = 'Failed to update game';
+		}
+	}
+
+	function closeEditModal() {
+		editModalOpen = false;
+		editingGame = null;
+	}
 </script>
 
+<EditGameModal
+	open={editModalOpen}
+	game={editingGame}
+	on:close={closeEditModal}
+	on:submit={handleEditSubmit}
+/>
+
+<!-- Delete Confirmation Modal -->
+{#if deleteConfirmGameId !== null}
+	<div class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+		<div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+			<div class="fixed inset-0 bg-black/30 transition-opacity" aria-hidden="true" on:click={cancelDelete}></div>
+			<div class="relative bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+				<h3 class="text-lg font-semibold text-slate-900 mb-2">Delete Game?</h3>
+				<p class="text-slate-600 text-sm mb-4">
+					This will permanently delete game #{deleteConfirmGameId} and all its scores. This action cannot be undone.
+				</p>
+				<div class="flex gap-2 justify-end">
+					<Button variant="ghost" on:click={cancelDelete} disabled={deleteLoading}>Cancel</Button>
+					<Button
+						variant="primary"
+						on:click={confirmDelete}
+						loading={deleteLoading}
+						className="bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700"
+					>
+						Delete
+					</Button>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <div class="h-screen flex flex-col bg-slate-50">
+	{#if actionError}
+		<div class="bg-red-50 border-b border-red-200 px-4 py-2 text-red-800 text-sm flex items-center gap-2">
+			<svg class="w-4 h-4 shrink-0 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+				<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
+			</svg>
+			<span>{actionError}</span>
+			<button class="ml-auto text-red-600 hover:text-red-800" aria-label="Dismiss error" on:click={() => actionError = ''}>
+				<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+					<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+				</svg>
+			</button>
+		</div>
+	{/if}
+
 	{#if $currentLeague}
 		<div class="flex items-center justify-between px-3 sm:px-6 py-3 bg-white border-b border-slate-200 shrink-0">
 			<div class="flex items-center gap-3">
@@ -193,8 +347,24 @@
 								<div class="text-sm sm:text-xs text-slate-500 font-medium">
 									{formatDate(game.playedAt)}
 								</div>
-								<div class="text-sm sm:text-xs text-slate-400">
-									Game #{game.id}
+								<div class="flex items-center gap-2">
+									{#if canManageGames}
+										<button
+											class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50 transition"
+											on:click={(e) => handleEditClick(e, game.id)}
+										>
+											Edit
+										</button>
+										<button
+											class="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1 rounded hover:bg-red-50 transition"
+											on:click={(e) => handleDeleteClick(e, game.id)}
+										>
+											Delete
+										</button>
+									{/if}
+									<div class="text-sm sm:text-xs text-slate-400">
+										Game #{game.id}
+									</div>
 								</div>
 							</div>
 

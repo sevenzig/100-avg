@@ -296,12 +296,16 @@
 	}
 
 	function updatePlacements() {
-		// Sort by total score and update placements
+		// Sort by total score and update placements (ties get same placement)
 		const sorted = [...editedPlayers].sort((a, b) => b.totalScore - a.totalScore);
+		let rank = 1;
 		sorted.forEach((player, index) => {
+			if (index > 0 && player.totalScore !== sorted[index - 1].totalScore) {
+				rank = index + 1;
+			}
 			const originalIndex = editedPlayers.findIndex((p) => p === player);
 			if (originalIndex !== -1) {
-				editedPlayers[originalIndex].placement = index + 1;
+				editedPlayers[originalIndex].placement = rank;
 			}
 		});
 	}
@@ -356,12 +360,17 @@
 			}
 		}
 
-		// Check placements
-		const placements = editedPlayers.map((p) => p.placement).sort((a, b) => a - b);
-		const expectedPlacements = Array.from({ length: editedPlayers.length }, (_, i) => i + 1);
-		if (JSON.stringify(placements) !== JSON.stringify(expectedPlacements)) {
-			error = `Placements must be unique and sequential from 1 to ${editedPlayers.length}`;
-			return false;
+		// Check placements are rank-consistent with totalScore (ties allowed)
+		const sorted = [...editedPlayers].sort((a, b) => b.totalScore - a.totalScore);
+		let expectedRank = 1;
+		for (let i = 0; i < sorted.length; i++) {
+			if (i > 0 && sorted[i].totalScore !== sorted[i - 1].totalScore) {
+				expectedRank = i + 1;
+			}
+			if (sorted[i].placement !== expectedRank) {
+				error = 'Placements must match score order. Tied scores should have the same placement.';
+				return false;
+			}
 		}
 
 		// Validate score totals
@@ -465,6 +474,13 @@
 		if (conf >= 0.6) return 'Medium';
 		return 'Low';
 	}
+
+	/** Move player at index to end of list (cycle for validation). */
+	function cyclePlayerToEnd(index: number) {
+		if (index < 0 || index >= editedPlayers.length) return;
+		const player = editedPlayers[index];
+		editedPlayers = [...editedPlayers.filter((_, i) => i !== index), player];
+	}
 </script>
 
 <Modal {open} title="Upload End of Game Screenshot" size="xl" on:close={handleClose}>
@@ -564,8 +580,20 @@
 		{:else}
 			<!-- Extracted Data Review Section -->
 			<div class="space-y-4">
-				<div class="flex items-center justify-between">
-					<div>
+				<!-- Pinned uploaded image for validation -->
+				{#if imagePreview}
+					<div class="rounded-lg border border-slate-200 overflow-hidden bg-slate-50 shrink-0">
+						<img
+							src={imagePreview}
+							alt="Screenshot to validate scores"
+							class="w-full max-h-48 object-contain object-top"
+						/>
+					</div>
+				{/if}
+
+				<!-- Header: Extracted Game Data | Score summary | Confidence -->
+				<div class="flex flex-wrap items-start gap-4">
+					<div class="shrink-0">
 						<h4 class="text-sm font-semibold text-slate-900">Extracted Game Data</h4>
 						<p class="text-xs text-slate-600 mt-1">
 							Confidence: <span class="font-semibold {getConfidenceColor(confidence)}">
@@ -573,10 +601,31 @@
 							</span>
 						</p>
 					</div>
-					<Button variant="ghost" size="sm" on:click={() => {
-						extractedData = null;
-						editedPlayers = [];
-					}}>Start Over</Button>
+					<!-- Middle: table layout — row 1: player names, row 2: total scores -->
+					<div class="flex-1 min-w-0 flex justify-center">
+						<div
+							class="grid gap-x-4 gap-y-1 text-center"
+							style="grid-template-columns: repeat({editedPlayers.length}, minmax(0, 1fr));"
+						>
+							{#each editedPlayers as player}
+								{@const isWinner = player.placement === 1}
+								<span class="text-sm font-medium truncate {isWinner ? 'text-green-600' : 'text-red-600'}" title={player.playerName || 'Player'}>
+									{player.playerName || 'Player'}
+								</span>
+							{/each}
+							{#each editedPlayers as player}
+								<span class="text-sm font-mono font-semibold text-slate-900 tabular-nums">
+									{player.totalScore ?? 0}
+								</span>
+							{/each}
+						</div>
+					</div>
+					<div class="shrink-0">
+						<Button variant="ghost" size="sm" on:click={() => {
+							extractedData = null;
+							editedPlayers = [];
+						}}>Start Over</Button>
+					</div>
 				</div>
 
 				{#each editedPlayers as player, index}
@@ -586,6 +635,9 @@
 							<h4 class="text-sm font-semibold" style="color: {playerColor};">
 								Player {index + 1}
 							</h4>
+							<Button variant="ghost" size="sm" on:click={() => cyclePlayerToEnd(index)}>
+								Validate
+							</Button>
 						</div>
 
 						<div class="space-y-3">
@@ -625,7 +677,7 @@
 										updatePlacements();
 									}}
 									min="0"
-									className="text-sm"
+									className="text-sm rounded-md bg-blue-50 text-blue-700 border-blue-200"
 								/>
 								<Input
 									type="number"
@@ -636,7 +688,7 @@
 										updatePlacements();
 									}}
 									min="0"
-									className="text-sm"
+									className="text-sm rounded-md bg-green-50 text-green-700 border-green-200"
 								/>
 								<Input
 									type="number"
@@ -647,7 +699,7 @@
 										updatePlacements();
 									}}
 									min="0"
-									className="text-sm"
+									className="text-sm rounded-md bg-yellow-50 text-yellow-700 border-yellow-200"
 								/>
 								<Input
 									type="number"
@@ -658,7 +710,7 @@
 										updatePlacements();
 									}}
 									min="0"
-									className="text-sm"
+									className="text-sm rounded-md bg-amber-50 text-amber-700 border-amber-200"
 								/>
 								<Input
 									type="number"
@@ -669,7 +721,7 @@
 										updatePlacements();
 									}}
 									min="0"
-									className="text-sm"
+									className="text-sm rounded-md bg-red-50 text-red-700 border-red-200"
 								/>
 								<Input
 									type="number"
@@ -680,7 +732,7 @@
 										updatePlacements();
 									}}
 									min="0"
-									className="text-sm"
+									className="text-sm rounded-md bg-purple-50 text-purple-700 border-purple-200"
 								/>
 								<Input
 									type="number"
@@ -691,7 +743,7 @@
 										updatePlacements();
 									}}
 									min="0"
-									className="text-sm"
+									className="text-sm rounded-md bg-pink-50 text-pink-700 border-pink-200"
 								/>
 							</div>
 						</div>

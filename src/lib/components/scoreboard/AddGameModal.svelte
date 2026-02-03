@@ -168,6 +168,21 @@
 			(player.nectar || 0);
 	}
 
+	function updatePlacements() {
+		// Sort by total score and update placements (ties get same placement)
+		const sorted = [...selectedPlayers].sort((a, b) => b.totalScore - a.totalScore);
+		let rank = 1;
+		sorted.forEach((player, index) => {
+			if (index > 0 && player.totalScore !== sorted[index - 1].totalScore) {
+				rank = index + 1;
+			}
+			const originalIndex = selectedPlayers.findIndex((p) => p === player);
+			if (originalIndex !== -1) {
+				selectedPlayers[originalIndex].placement = rank;
+			}
+		});
+	}
+
 	function validate(): boolean {
 		// Check that all players have a username
 		for (let i = 0; i < selectedPlayers.length; i++) {
@@ -182,12 +197,17 @@
 			}
 		}
 
-		// Check placements
-		const placements = selectedPlayers.map((p) => p.placement).sort((a, b) => a - b);
-		const expectedPlacements = Array.from({ length: selectedPlayers.length }, (_, i) => i + 1);
-		if (JSON.stringify(placements) !== JSON.stringify(expectedPlacements)) {
-			error = `Placements must be unique and sequential from 1 to ${selectedPlayers.length}`;
-			return false;
+		// Check placements are rank-consistent with totalScore (ties allowed)
+		const sorted = [...selectedPlayers].sort((a, b) => b.totalScore - a.totalScore);
+		let expectedRank = 1;
+		for (let i = 0; i < sorted.length; i++) {
+			if (i > 0 && sorted[i].totalScore !== sorted[i - 1].totalScore) {
+				expectedRank = i + 1;
+			}
+			if (sorted[i].placement !== expectedRank) {
+				error = 'Placements must match score order. Tied scores should have the same placement.';
+				return false;
+			}
 		}
 
 		// Validate score totals
@@ -376,7 +396,7 @@
 							label="Birds"
 							bind:value={player.birds}
 							min="0"
-							on:input={() => calculateTotal(index)}
+							on:input={() => { calculateTotal(index); updatePlacements(); }}
 							className="text-sm"
 						/>
 						<Input
@@ -384,7 +404,7 @@
 							label="Cards"
 							bind:value={player.bonusCards}
 							min="0"
-							on:input={() => calculateTotal(index)}
+							on:input={() => { calculateTotal(index); updatePlacements(); }}
 							className="text-sm"
 						/>
 						<Input
@@ -392,7 +412,7 @@
 							label="Goals"
 							bind:value={player.endOfRoundGoals}
 							min="0"
-							on:input={() => calculateTotal(index)}
+							on:input={() => { calculateTotal(index); updatePlacements(); }}
 							className="text-sm"
 						/>
 						<Input
@@ -400,7 +420,7 @@
 							label="Eggs"
 							bind:value={player.eggs}
 							min="0"
-							on:input={() => calculateTotal(index)}
+							on:input={() => { calculateTotal(index); updatePlacements(); }}
 							className="text-sm"
 						/>
 						<Input
@@ -408,7 +428,7 @@
 							label="Food"
 							bind:value={player.foodOnCards}
 							min="0"
-							on:input={() => calculateTotal(index)}
+							on:input={() => { calculateTotal(index); updatePlacements(); }}
 							className="text-sm"
 						/>
 						<Input
@@ -416,7 +436,7 @@
 							label="Tucked"
 							bind:value={player.tuckedCards}
 							min="0"
-							on:input={() => calculateTotal(index)}
+							on:input={() => { calculateTotal(index); updatePlacements(); }}
 							className="text-sm"
 						/>
 						<Input
@@ -424,7 +444,7 @@
 							label="Nectar"
 							bind:value={player.nectar}
 							min="0"
-							on:input={() => calculateTotal(index)}
+							on:input={() => { calculateTotal(index); updatePlacements(); }}
 							className="text-sm"
 						/>
 					</div>
