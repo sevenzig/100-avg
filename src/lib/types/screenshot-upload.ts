@@ -15,6 +15,8 @@ export interface ExtractedPlayer {
 
 export interface ExtractedGameData {
 	players: ExtractedPlayer[];
+	/** Notes from the AI about extraction uncertainty or issues */
+	extractionNotes?: string;
 }
 
 export interface ParsingResult {

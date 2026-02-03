@@ -86,31 +86,49 @@ export async function parseScreenshot(imageBuffer: Buffer): Promise<ExtractedGam
 						},
 						{
 							type: 'text',
-							text: `Extract game data from this Wingspan score screenshot. 
-Return JSON in this exact format (no markdown, just raw JSON):
+							text: `You are extracting final scores from a Wingspan board game end-of-game screenshot.
+
+WINGSPAN SCORING LAYOUT:
+The score screen shows a table with players as columns and scoring categories as rows:
+- Row order (top to bottom): Birds, Bonus Cards, End-of-Round Goals, Eggs, Food on Cards, Tucked Cards, Nectar (if Oceania expansion)
+- The TOTAL score is shown prominently for each player
+- Player names appear at the top of each column
+- Some versions label categories differently:
+  - "Bonus Cards" may appear as "Bonus" or "End-of-game bonuses"
+  - "End-of-Round Goals" may appear as "Round goals" or "Goals"
+  - "Food on Cards" may appear as "Cached food" or "Food cached"
+  - "Tucked Cards" may appear as "Tucked" or "Cards tucked"
+
+EXTRACTION INSTRUCTIONS:
+1. Identify each player's column by their username at the top
+2. For each player, read down their column to get each scoring category value
+3. The displayed total should equal: birds + bonusCards + endOfRoundGoals + eggs + foodOnCards + tuckedCards + nectar
+4. If nectar column is missing (base game without Oceania), use 0 for nectar
+
+CRITICAL VERIFICATION:
+- Double-check that the sum of breakdown values equals the displayed total for each player
+- If they don't match, re-read the values carefully - OCR errors are common with similar-looking digits (0/8, 1/7, 3/8, 5/6)
+- Player names are case-sensitive - preserve exact capitalization
+
+Return ONLY valid JSON (no markdown, no explanation):
 {
   "players": [
     {
-      "playerName": "string",
-      "totalScore": number,
+      "playerName": "ExactPlayerName",
+      "totalScore": 0,
       "scoringBreakdown": {
-        "birds": number,
-        "bonusCards": number,
-        "endOfRoundGoals": number,
-        "eggs": number,
-        "foodOnCards": number,
-        "tuckedCards": number,
-        "nectar": number
+        "birds": 0,
+        "bonusCards": 0,
+        "endOfRoundGoals": 0,
+        "eggs": 0,
+        "foodOnCards": 0,
+        "tuckedCards": 0,
+        "nectar": 0
       }
     }
-  ]
-}
-
-Important:
-- Extract all players visible in the screenshot
-- Calculate placement based on totalScore (1st = highest score)
-- Ensure all scoring breakdown values are numbers
-- If a category is not visible or unclear, use 0`
+  ],
+  "extractionNotes": "Any uncertainty or issues noticed during extraction"
+}`
 						}
 					]
 				}
@@ -147,10 +165,14 @@ Important:
 			throw new Error('Invalid data structure: players array missing');
 		}
 
-		// Sort by total score and assign placements
+		// Sort by total score and assign placements (ties get same placement)
 		const sortedPlayers = [...parsedData.players].sort((a, b) => b.totalScore - a.totalScore);
+		let rank = 1;
 		sortedPlayers.forEach((player, index) => {
-			player.placement = index + 1;
+			if (index > 0 && player.totalScore !== sortedPlayers[index - 1].totalScore) {
+				rank = index + 1;
+			}
+			player.placement = rank;
 		});
 
 		// Ensure all scoring breakdown values are numbers
@@ -189,10 +211,14 @@ Important:
 				player.scoringBreakdown.nectar;
 		}
 
-		// Re-sort after recalculating totals
+		// Re-sort after recalculating totals and assign placements (ties get same placement)
 		const finalSorted = [...parsedData.players].sort((a, b) => b.totalScore - a.totalScore);
+		let finalRank = 1;
 		finalSorted.forEach((player, index) => {
-			player.placement = index + 1;
+			if (index > 0 && player.totalScore !== finalSorted[index - 1].totalScore) {
+				finalRank = index + 1;
+			}
+			player.placement = finalRank;
 		});
 
 		return parsedData;
@@ -244,37 +270,115 @@ Important:
 	}
 }
 
+/** Calculate breakdown sum for a player */
+function getBreakdownSum(p: ExtractedPlayer): number {
+	return (
+		p.scoringBreakdown.birds +
+		p.scoringBreakdown.bonusCards +
+		p.scoringBreakdown.endOfRoundGoals +
+		p.scoringBreakdown.eggs +
+		p.scoringBreakdown.foodOnCards +
+		p.scoringBreakdown.tuckedCards +
+		p.scoringBreakdown.nectar
+	);
+}
+
+/** Wingspan-specific scoring constraints for validation */
+const WINGSPAN_CONSTRAINTS = {
+	// Typical score ranges based on game data analysis
+	minTotalScore: 30, // Very low scores are suspicious
+	maxTotalScore: 180, // Very high scores are rare but possible
+	maxBirds: 100, // 15 birds max * ~7 points average
+	maxBonusCards: 50, // Typically 2 bonus cards, max ~25 each
+	maxEndOfRoundGoals: 25, // 4 rounds * max 6-7 points
+	maxEggs: 40, // Many eggs possible with egg-laying strategies
+	maxFoodOnCards: 50, // Food caching strategies can accumulate
+	maxTuckedCards: 40, // Tucking strategies can accumulate
+	maxNectar: 20, // Oceania expansion nectar scoring
+	// Player count constraints
+	minPlayers: 1,
+	maxPlayers: 5
+};
+
 export function calculateConfidence(data: ExtractedGameData): number {
-	// Simple confidence calculation based on data completeness
 	if (!data.players || data.players.length === 0) {
 		return 0;
 	}
 
-	let confidence = 0.5; // Base confidence
+	let confidence = 0.4; // Base confidence (lower starting point for more granular scoring)
+	const playerCount = data.players.length;
 
-	// Check if all players have names
+	// Player count validity (+0.1)
+	if (playerCount >= WINGSPAN_CONSTRAINTS.minPlayers && playerCount <= WINGSPAN_CONSTRAINTS.maxPlayers) {
+		confidence += 0.1;
+	}
+
+	// All players have non-empty names (+0.15)
 	const allHaveNames = data.players.every((p) => p.playerName && p.playerName.trim().length > 0);
-	if (allHaveNames) confidence += 0.2;
+	if (allHaveNames) confidence += 0.15;
 
-	// Check if all scores are reasonable
-	const allScoresValid = data.players.every(
-		(p) => p.totalScore >= 0 && p.totalScore <= 200 && p.totalScore === Math.round(p.totalScore)
-	);
-	if (allScoresValid) confidence += 0.2;
-
-	// Check if breakdown sums match totals
-	const breakdownsMatch = data.players.every((p) => {
-		const sum =
-			p.scoringBreakdown.birds +
-			p.scoringBreakdown.bonusCards +
-			p.scoringBreakdown.endOfRoundGoals +
-			p.scoringBreakdown.eggs +
-			p.scoringBreakdown.foodOnCards +
-			p.scoringBreakdown.tuckedCards +
-			p.scoringBreakdown.nectar;
-		return Math.abs(sum - p.totalScore) <= 1; // Allow 1 point difference for rounding
+	// Names look like valid usernames (not placeholder text) (+0.05)
+	const namesLookValid = data.players.every((p) => {
+		const name = p.playerName?.trim() || '';
+		// Check it's not a common placeholder or label
+		const placeholders = ['player', 'name', 'total', 'score', 'unknown', '???', '...'];
+		return name.length >= 2 && !placeholders.includes(name.toLowerCase());
 	});
-	if (breakdownsMatch) confidence += 0.1;
+	if (namesLookValid) confidence += 0.05;
+
+	// All total scores in reasonable range (+0.1)
+	const scoresInRange = data.players.every(
+		(p) =>
+			p.totalScore >= WINGSPAN_CONSTRAINTS.minTotalScore &&
+			p.totalScore <= WINGSPAN_CONSTRAINTS.maxTotalScore &&
+			Number.isInteger(p.totalScore)
+	);
+	if (scoresInRange) confidence += 0.1;
+
+	// All breakdown values are non-negative integers (+0.05)
+	const breakdownsValid = data.players.every((p) => {
+		const b = p.scoringBreakdown;
+		return (
+			Object.values(b).every((v) => typeof v === 'number' && v >= 0 && Number.isInteger(v))
+		);
+	});
+	if (breakdownsValid) confidence += 0.05;
+
+	// Breakdown sums match totals exactly (+0.15)
+	const breakdownsMatchExact = data.players.every((p) => getBreakdownSum(p) === p.totalScore);
+	if (breakdownsMatchExact) {
+		confidence += 0.15;
+	} else {
+		// Partial credit if within 1 point (rounding tolerance)
+		const breakdownsMatchClose = data.players.every(
+			(p) => Math.abs(getBreakdownSum(p) - p.totalScore) <= 1
+		);
+		if (breakdownsMatchClose) confidence += 0.08;
+	}
+
+	// Individual category values within realistic ranges (+0.1)
+	const categoriesInRange = data.players.every((p) => {
+		const b = p.scoringBreakdown;
+		return (
+			b.birds <= WINGSPAN_CONSTRAINTS.maxBirds &&
+			b.bonusCards <= WINGSPAN_CONSTRAINTS.maxBonusCards &&
+			b.endOfRoundGoals <= WINGSPAN_CONSTRAINTS.maxEndOfRoundGoals &&
+			b.eggs <= WINGSPAN_CONSTRAINTS.maxEggs &&
+			b.foodOnCards <= WINGSPAN_CONSTRAINTS.maxFoodOnCards &&
+			b.tuckedCards <= WINGSPAN_CONSTRAINTS.maxTuckedCards &&
+			b.nectar <= WINGSPAN_CONSTRAINTS.maxNectar
+		);
+	});
+	if (categoriesInRange) confidence += 0.1;
+
+	// Scores are distinct OR ties have same total (proper ranking possible) (+0.05)
+	const sortedScores = [...data.players].sort((a, b) => b.totalScore - a.totalScore);
+	const rankingValid = sortedScores.every((p, i) => {
+		if (i === 0) return true;
+		// Either different score or tied with previous
+		return p.totalScore <= sortedScores[i - 1].totalScore;
+	});
+	if (rankingValid) confidence += 0.05;
 
 	return Math.min(confidence, 1.0);
 }
@@ -287,32 +391,96 @@ export function extractWarnings(data: ExtractedGameData): string[] {
 		return warnings;
 	}
 
-	// Check for missing player names
-	const missingNames = data.players.filter((p) => !p.playerName || p.playerName.trim().length === 0);
-	if (missingNames.length > 0) {
-		warnings.push(`${missingNames.length} player(s) missing names`);
+	// Check player count
+	if (data.players.length > WINGSPAN_CONSTRAINTS.maxPlayers) {
+		warnings.push(`Detected ${data.players.length} players (max is ${WINGSPAN_CONSTRAINTS.maxPlayers})`);
 	}
 
-	// Check for score mismatches
-	const mismatches = data.players.filter((p) => {
-		const sum =
-			p.scoringBreakdown.birds +
-			p.scoringBreakdown.bonusCards +
-			p.scoringBreakdown.endOfRoundGoals +
-			p.scoringBreakdown.eggs +
-			p.scoringBreakdown.foodOnCards +
-			p.scoringBreakdown.tuckedCards +
-			p.scoringBreakdown.nectar;
-		return Math.abs(sum - p.totalScore) > 1;
-	});
-	if (mismatches.length > 0) {
-		warnings.push(`${mismatches.length} player(s) have score breakdown mismatches`);
+	// Check for missing or suspicious player names
+	for (let i = 0; i < data.players.length; i++) {
+		const p = data.players[i];
+		const name = p.playerName?.trim() || '';
+		if (!name) {
+			warnings.push(`Player ${i + 1}: Missing name`);
+		} else if (name.length < 2) {
+			warnings.push(`Player ${i + 1}: Name "${name}" seems too short`);
+		}
 	}
 
-	// Check for unusual scores
-	const unusualScores = data.players.filter((p) => p.totalScore < 0 || p.totalScore > 200);
-	if (unusualScores.length > 0) {
-		warnings.push(`${unusualScores.length} player(s) have unusual scores`);
+	// Check for score breakdown mismatches (critical validation)
+	for (const p of data.players) {
+		const sum = getBreakdownSum(p);
+		const diff = Math.abs(sum - p.totalScore);
+		if (diff > 0) {
+			warnings.push(
+				`${p.playerName}: Breakdown sum (${sum}) differs from total (${p.totalScore}) by ${diff} points - please verify`
+			);
+		}
+	}
+
+	// Check for unusual total scores
+	for (const p of data.players) {
+		if (p.totalScore < WINGSPAN_CONSTRAINTS.minTotalScore) {
+			warnings.push(`${p.playerName}: Score ${p.totalScore} is unusually low - please verify`);
+		}
+		if (p.totalScore > WINGSPAN_CONSTRAINTS.maxTotalScore) {
+			warnings.push(`${p.playerName}: Score ${p.totalScore} is unusually high - please verify`);
+		}
+	}
+
+	// Check for category values outside normal ranges
+	for (const p of data.players) {
+		const b = p.scoringBreakdown;
+		if (b.birds > WINGSPAN_CONSTRAINTS.maxBirds) {
+			warnings.push(`${p.playerName}: Birds score ${b.birds} exceeds typical maximum`);
+		}
+		if (b.bonusCards > WINGSPAN_CONSTRAINTS.maxBonusCards) {
+			warnings.push(`${p.playerName}: Bonus cards ${b.bonusCards} exceeds typical maximum`);
+		}
+		if (b.endOfRoundGoals > WINGSPAN_CONSTRAINTS.maxEndOfRoundGoals) {
+			warnings.push(`${p.playerName}: End-of-round goals ${b.endOfRoundGoals} exceeds typical maximum`);
+		}
+		if (b.eggs > WINGSPAN_CONSTRAINTS.maxEggs) {
+			warnings.push(`${p.playerName}: Eggs ${b.eggs} exceeds typical maximum`);
+		}
+		if (b.foodOnCards > WINGSPAN_CONSTRAINTS.maxFoodOnCards) {
+			warnings.push(`${p.playerName}: Food on cards ${b.foodOnCards} exceeds typical maximum`);
+		}
+		if (b.tuckedCards > WINGSPAN_CONSTRAINTS.maxTuckedCards) {
+			warnings.push(`${p.playerName}: Tucked cards ${b.tuckedCards} exceeds typical maximum`);
+		}
+		if (b.nectar > WINGSPAN_CONSTRAINTS.maxNectar) {
+			warnings.push(`${p.playerName}: Nectar ${b.nectar} exceeds typical maximum`);
+		}
+	}
+
+	// Check for any negative values
+	for (const p of data.players) {
+		const b = p.scoringBreakdown;
+		const negativeFields = Object.entries(b).filter(([, v]) => typeof v === 'number' && v < 0);
+		if (negativeFields.length > 0) {
+			warnings.push(
+				`${p.playerName}: Negative values detected (${negativeFields.map(([k]) => k).join(', ')})`
+			);
+		}
+	}
+
+	// Check for duplicate player names
+	const names = data.players.map((p) => p.playerName?.toLowerCase().trim()).filter(Boolean);
+	const uniqueNames = new Set(names);
+	if (uniqueNames.size < names.length) {
+		warnings.push('Duplicate player names detected - please verify');
+	}
+
+	// Include AI extraction notes if present and non-trivial
+	if (data.extractionNotes && data.extractionNotes.trim().length > 0) {
+		const notes = data.extractionNotes.trim();
+		// Skip generic "no issues" type messages
+		const skipPhrases = ['no issues', 'no uncertainty', 'extraction successful', 'all clear'];
+		const isGeneric = skipPhrases.some((phrase) => notes.toLowerCase().includes(phrase));
+		if (!isGeneric) {
+			warnings.push(`AI notes: ${notes}`);
+		}
 	}
 
 	return warnings;
