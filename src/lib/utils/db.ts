@@ -184,4 +184,15 @@ export function initDatabase() {
 			}
 		}
 	}
+
+	// Add is_super_admin column if it doesn't exist
+	if (!columnNames.includes('is_super_admin')) {
+		try {
+			database.exec('ALTER TABLE users ADD COLUMN is_super_admin INTEGER DEFAULT 0');
+		} catch (error: any) {
+			if (!error.message.includes('duplicate column')) {
+				console.warn('Warning: Could not add is_super_admin column:', error.message);
+			}
+		}
+	}
 }

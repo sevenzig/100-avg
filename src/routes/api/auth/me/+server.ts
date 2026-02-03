@@ -17,9 +17,9 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 	const db = getDb();
 	const user = db
-		.prepare('SELECT id, username, email, created_at as createdAt, is_admin FROM users WHERE id = ?')
+		.prepare('SELECT id, username, email, created_at as createdAt, is_admin, is_super_admin FROM users WHERE id = ?')
 		.get(decoded.userId) as
-		| { id: number; username: string; email: string; createdAt: string; is_admin: number | null }
+		| { id: number; username: string; email: string; createdAt: string; is_admin: number | null; is_super_admin: number | null }
 		| undefined;
 
 	if (!user) {
@@ -32,7 +32,8 @@ export const GET: RequestHandler = async ({ cookies }) => {
 			username: user.username,
 			email: user.email,
 			createdAt: user.createdAt,
-			isAdmin: user.is_admin === 1
+			isAdmin: user.is_admin === 1,
+			isSuperAdmin: user.is_super_admin === 1
 		}
 	});
 };

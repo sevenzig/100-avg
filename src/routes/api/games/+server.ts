@@ -1,7 +1,9 @@
 import { json } from '@sveltejs/kit';
-import type { RequestHandler, Cookies } from './$types';
+import type { RequestHandler } from './$types';
+import type { Cookies } from '@sveltejs/kit';
 import { getDb } from '$lib/utils/db';
 import { verifyToken, hashPassword } from '$lib/utils/auth';
+import { validatePlacementsConsistentWithScores } from '$lib/utils/validation';
 
 interface ScoreInput {
 	userId?: number;
@@ -158,14 +160,13 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			});
 		}
 
-		// Validate placements - must be unique and sequential starting from 1
-		const placements = processedScores.map((s) => s.placement).sort((a, b) => a - b);
-		const expectedPlacements = Array.from({ length: processedScores.length }, (_, i) => i + 1);
-		if (JSON.stringify(placements) !== JSON.stringify(expectedPlacements)) {
+		// Validate placements - must be rank-consistent with totalScore (ties allowed)
+		const placementValidation = validatePlacementsConsistentWithScores(processedScores);
+		if (!placementValidation.valid) {
 			return json(
 				{
 					success: false,
-					error: `Placements must be unique and sequential from 1 to ${processedScores.length}`
+					error: placementValidation.error
 				},
 				{ status: 400 }
 			);

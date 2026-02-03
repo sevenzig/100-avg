@@ -66,3 +66,28 @@ export function isAdmin(userId: number, db: any): boolean {
 		.get(userId) as { is_admin: number | null } | undefined;
 	return user?.is_admin === 1;
 }
+
+// Superadmin: full access to all leagues
+export function isSuperAdmin(userId: number, db: any): boolean {
+	const user = db
+		.prepare('SELECT is_super_admin FROM users WHERE id = ?')
+		.get(userId) as { is_super_admin: number | null } | undefined;
+	// Fall back to isAdmin if is_super_admin column doesn't exist yet
+	if (user === undefined) {
+		return isAdmin(userId, db);
+	}
+	return user?.is_super_admin === 1;
+}
+
+// League admin: user created this league
+export function isLeagueAdmin(userId: number, leagueId: number, db: any): boolean {
+	const league = db
+		.prepare('SELECT created_by FROM leagues WHERE id = ?')
+		.get(leagueId) as { created_by: number } | undefined;
+	return league?.created_by === userId;
+}
+
+// Can perform update/delete on games in this league
+export function canManageLeagueGames(userId: number, leagueId: number, db: any): boolean {
+	return isSuperAdmin(userId, db) || isLeagueAdmin(userId, leagueId, db);
+}
