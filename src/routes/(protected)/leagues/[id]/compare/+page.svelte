@@ -224,9 +224,15 @@
 										{#each comparisonPlayers as stat}
 											{@const val = getNumericValue(stat, key)}
 											{@const best = isBestInRow(stat, key)}
-											<td class="py-2.5 px-4 text-center">
+											<td
+												class="py-2.5 px-4 text-center {best
+													? 'bg-emerald-100 ring-1 ring-emerald-200/80'
+													: ''}"
+											>
 												<span
-													class="font-mono tabular-nums {best ? 'font-bold text-emerald-700' : 'text-slate-900'}"
+													class="font-mono tabular-nums {best
+														? 'font-bold text-emerald-900'
+														: 'text-slate-900'}"
 												>
 													{key === 'avgPlacement' || key === 'averageScore' ? val.toFixed(2) : val.toFixed(1)}
 												</span>
