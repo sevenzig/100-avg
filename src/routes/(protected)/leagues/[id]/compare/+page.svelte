@@ -4,6 +4,8 @@
 	import { user } from '$lib/stores/auth';
 	import { currentLeague, leagueStats } from '$lib/stores/league';
 	import Button from '$lib/components/shared/Button.svelte';
+	import ComparisonScoreOverTimeChart from '$lib/components/compare/ComparisonScoreOverTimeChart.svelte';
+	import ComparisonCategoryAveragesChart from '$lib/components/compare/ComparisonCategoryAveragesChart.svelte';
 	import type { LeagueStats } from '$lib/stores/league';
 
 	const MAX_OTHER_PLAYERS = 5;
@@ -21,9 +23,27 @@
 	/** Lower is better for placement only */
 	const LOWER_IS_BETTER = new Set(['avgPlacement']);
 
+	type ChartType = 'score-over-time' | 'category-averages';
+	const CHART_OPTIONS: { value: ChartType; label: string }[] = [
+		{ value: 'score-over-time', label: 'Score over time' },
+		{ value: 'category-averages', label: 'Category averages' }
+	];
+
 	let loading = true;
 	let error = '';
 	let selectedIds: number[] = [];
+	let activeChart: ChartType = 'score-over-time';
+
+	// Chart data state
+	let chartLoading = false;
+	let chartError = '';
+	let chartGames: Array<{ gameId: number; date: string; gameNumber: number }> = [];
+	let chartSeries: Array<{
+		userId: number;
+		username: string;
+		color: string;
+		scores: Array<number | null>;
+	}> = [];
 
 	$: leagueId = parseInt($page.params.id, 10);
 	$: leagueIdValid = Number.isFinite(leagueId);
@@ -83,6 +103,40 @@
 		? [myStat, ...selectedStats]
 		: selectedStats;
 	$: canAddMore = selectedIds.length < MAX_OTHER_PLAYERS;
+
+	// Fetch chart data when comparison players change
+	$: if (comparisonPlayers.length > 0 && leagueIdValid) {
+		loadChartData(comparisonPlayers);
+	} else {
+		chartGames = [];
+		chartSeries = [];
+		chartError = '';
+	}
+
+	async function loadChartData(players: LeagueStats[]) {
+		chartLoading = true;
+		chartError = '';
+		try {
+			const ids = players.map((p) => p.userId).join(',');
+			const res = await fetch(`/api/leagues/${leagueId}/compare-chart-data?userIds=${ids}&limit=30`);
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}));
+				chartError = data.error || 'Failed to load chart data';
+				chartGames = [];
+				chartSeries = [];
+				return;
+			}
+			const data = await res.json();
+			chartGames = data.games;
+			chartSeries = data.series;
+		} catch (e) {
+			chartError = 'Failed to load chart data';
+			chartGames = [];
+			chartSeries = [];
+		} finally {
+			chartLoading = false;
+		}
+	}
 
 	function togglePlayer(userId: number) {
 		if (selectedIds.includes(userId)) {
@@ -243,6 +297,50 @@
 							</tbody>
 						</table>
 					</div>
+				</div>
+
+				<!-- Charts section -->
+				<div class="bg-white rounded-lg border border-slate-200 shadow-sm p-4 mt-6">
+					<!-- Chart type selector -->
+					<div class="flex gap-2 mb-4">
+						{#each CHART_OPTIONS as opt}
+							<button
+								type="button"
+								class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors {activeChart === opt.value
+									? 'bg-slate-900 text-white'
+									: 'bg-slate-100 text-slate-700 hover:bg-slate-200'}"
+								on:click={() => (activeChart = opt.value)}
+							>
+								{opt.label}
+							</button>
+						{/each}
+					</div>
+
+					<!-- Chart content -->
+					{#if activeChart === 'score-over-time'}
+						{#if chartLoading}
+							<div class="flex justify-center items-center h-64">
+								<span class="loading loading-spinner loading-md"></span>
+							</div>
+						{:else if chartError}
+							<div class="flex items-center justify-center h-64 text-slate-500 text-sm">
+								{chartError}
+							</div>
+						{:else}
+							<ComparisonScoreOverTimeChart
+								games={chartGames}
+								series={chartSeries}
+								{currentUserId}
+								{getPlayerColor}
+							/>
+						{/if}
+					{:else if activeChart === 'category-averages'}
+						<ComparisonCategoryAveragesChart
+							{comparisonPlayers}
+							{currentUserId}
+							{getPlayerColor}
+						/>
+					{/if}
 				</div>
 			{/if}
 		</div>
