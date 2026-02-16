@@ -1,10 +1,10 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/utils/db';
-import { getUserId, isAdmin } from '$lib/utils/auth';
+import { getUserId, isAdmin, type CookieGetter, type DbLike } from '$lib/utils/auth';
 
 // Helper to check admin access
-function requireAdmin(cookies: any, db: any): number {
+function requireAdmin(cookies: CookieGetter, db: DbLike): number {
 	const userId = getUserId(cookies);
 	if (!userId) {
 		throw { status: 401, body: { error: 'Not authenticated' } };

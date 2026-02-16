@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/utils/db';
-import { verifyToken, canManageLeagueGames } from '$lib/utils/auth';
+import { getUserId, canManageLeagueGames } from '$lib/utils/auth';
 import { validatePlacementsConsistentWithScores } from '$lib/utils/validation';
 
 interface ScoreInput {
@@ -15,13 +15,6 @@ interface ScoreInput {
 	foodOnCards?: number;
 	tuckedCards?: number;
 	nectar?: number;
-}
-
-function getUserId(cookies: any): number | null {
-	const token = cookies.get('token');
-	if (!token) return null;
-	const decoded = verifyToken(token);
-	return decoded?.userId || null;
 }
 
 export const GET: RequestHandler = async ({ params, cookies }) => {

@@ -2,6 +2,14 @@
 
 A comprehensive design system for a Svelte-based web application tracking Wingspan board game statistics across multiple players and leagues.
 
+## 🛠 Development
+
+- **Env**: `JWT_SECRET` (required in production); optional `DATABASE_PATH` (default `database/wingspan.db`).
+- **Run**: `npm run dev`
+- **Seed DB**: `npm run seed`
+- **Tests**: `npm run test` or `npm run test:watch` (Vitest; see `docs/development/ARCHITECTURE.md`).
+- **Architecture**: `docs/development/ARCHITECTURE.md` – stack, auth, data model, tests.
+
 ## 📋 Design Documents
 
 This repository contains complete design documentation for the Wingspan Score Tracker application:

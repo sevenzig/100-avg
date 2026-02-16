@@ -1,14 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/utils/db';
-import { verifyToken } from '$lib/utils/auth';
-
-function getUserId(cookies: any): number | null {
-	const token = cookies.get('token');
-	if (!token) return null;
-	const decoded = verifyToken(token);
-	return decoded?.userId || null;
-}
+import { getUserId } from '$lib/utils/auth';
 
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	const userId = getUserId(cookies);
