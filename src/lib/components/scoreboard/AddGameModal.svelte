@@ -388,8 +388,9 @@
 							label="Total"
 							bind:value={player.totalScore}
 							required
-							disabled
-							className="bg-slate-100 text-sm"
+							min="0"
+							on:input={() => updatePlacements()}
+							className="text-sm"
 						/>
 						<Input
 							type="number"

@@ -94,23 +94,48 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			let scoreUserId: number;
 
 			if (score.isNew && score.username) {
-				// Check if username already exists
-				const existingUser = db
-					.prepare('SELECT id FROM users WHERE username = ?')
-					.get(score.username) as { id: number } | undefined;
+				// First try to match by username or any platform alias (e.g. Steam name "hotnut" -> user sevenzig)
+				const matchedByAlias = db
+					.prepare(
+						`
+					SELECT id FROM users
+					WHERE LOWER(TRIM(username)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(steam_alias)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(android_alias)) = LOWER(TRIM(?))
+					   OR LOWER(TRIM(iphone_alias)) = LOWER(TRIM(?))
+					LIMIT 1
+				`
+					)
+					.get(
+						score.username,
+						score.username,
+						score.username,
+						score.username
+					) as { id: number } | undefined;
 
-				if (existingUser) {
-					scoreUserId = existingUser.id;
+				if (matchedByAlias) {
+					scoreUserId = matchedByAlias.id;
 				} else {
-					// Create new user with a default password
-					const defaultPassword = `temp_${Math.random().toString(36).slice(2)}_${Date.now()}`;
-					const passwordHash = await hashPassword(defaultPassword);
-					const email = `${score.username.toLowerCase().replace(/\s+/g, '')}@wingspan.local`;
+					// No match by username or alias: check if username already exists, else create
+					const existingUser = db
+						.prepare('SELECT id FROM users WHERE username = ?')
+						.get(score.username) as { id: number } | undefined;
 
-					const userResult = db
-						.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)')
-						.run(score.username, email, passwordHash);
-					scoreUserId = userResult.lastInsertRowid as number;
+					if (existingUser) {
+						scoreUserId = existingUser.id;
+					} else {
+						// Create new user with a default password
+						const defaultPassword = `temp_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+						const passwordHash = await hashPassword(defaultPassword);
+						const email = `${score.username.toLowerCase().replace(/\s+/g, '')}@wingspan.local`;
+
+						const userResult = db
+							.prepare(
+								'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)'
+							)
+							.run(score.username, email, passwordHash);
+						scoreUserId = userResult.lastInsertRowid as number;
+					}
 				}
 			} else if (score.userId) {
 				scoreUserId = score.userId;
