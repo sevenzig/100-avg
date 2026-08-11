@@ -1,18 +1,13 @@
-# Docker Compose - Production Configuration
+# Production — portable VPS (Namecheap Quasar, etc.)
+# Publishes 127.0.0.1:7070 only — host Caddy owns 80/443 (avoids gutexcellence :3000/:3001, brokenloop :8082/:8083, :8084/:8085). :7071 reserved.
 #
-# This configuration sets up the Wingspan Score Tracker for production deployment:
-# - Uses multi-stage Dockerfile with optimized production build
-# - Runs built application on port 3000 (configurable via PORT env var)
-# - Uses bind mount to /home/scott/databases for database persistence
-# - Includes health checks for container orchestration
-# - Loads environment from .env.production file
+# Usage:
+#   cp .env.production.example .env.production
+#   # edit JWT_SECRET, ORIGIN, ANTHROPIC_API_KEY
+#   docker compose -f docker-compose.prod.yml up -d --build
 #
-# Usage: docker-compose -f docker-compose.prod.yml up -d
-#
-# IMPORTANT: Ensure /home/scott/databases exists with correct permissions:
-#   sudo mkdir -p /home/scott/databases
-#   sudo chown -R 1001:1001 /home/scott/databases
-#   sudo chmod 755 /home/scott/databases
+# Quasar (1GB RAM): add 2G swap before first build if the build OOMs.
+# DB persists in volume wingspan-db-prod.
 
 services:
   app:
@@ -21,68 +16,58 @@ services:
       dockerfile: Dockerfile
       target: production
       args:
-        BUILD_DATE: ${BUILD_DATE:-$(date -u +'%Y-%m-%dT%H:%M:%SZ')}
-        VCS_REF: ${VCS_REF:-$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')}
+        BUILD_DATE: ${BUILD_DATE:-}
+        VCS_REF: ${VCS_REF:-}
         VERSION: ${VERSION:-1.0.0}
     container_name: wingspan-score-prod
-    expose:
-      - "3000"
-    # Note: Ports are not exposed here - Dokploy or reverse proxy handles external access
-    # To expose directly, uncomment: ports: ["3000:3000"]
+    ports:
+      - "127.0.0.1:7070:3000"
     volumes:
-      # Mount persistent volume for database storage
-      # Using bind mount to /home/scott/databases for easy access and backup
-      # This volume will persist data across container restarts and deployments
-      # If the directory is empty on first mount, the seeded database from the image will be used
-      # Subsequent mounts will use the persisted data from the directory
-      - /home/scott/databases:/app/database
+      - wingspan-db-prod:/app/database
+    env_file:
+      - .env.production
     environment:
       - NODE_ENV=production
       - DATABASE_PATH=/app/database/wingspan.db
-      - JWT_SECRET=${JWT_SECRET}
       - PORT=3000
       - HOST=0.0.0.0
-      - ORIGIN=${ORIGIN:-https://100avg.phelddagrif.farm}
       - PROTOCOL_HEADER=x-forwarded-proto
       - HOST_HEADER=x-forwarded-host
-      # Increase body size limit for file uploads (12MB = 12582912 bytes)
-      # Default is 512KB, which is too small for image uploads
       - BODY_SIZE_LIMIT=12582912
-      # Anthropic Claude API key for screenshot parsing
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - NODE_OPTIONS=--max-old-space-size=384
     restart: unless-stopped
     networks:
       - wingspan-network
-    # Resource limits to prevent resource exhaustion
     deploy:
       resources:
         limits:
-          cpus: '1.0'
+          cpus: "1.0"
           memory: 512M
         reservations:
-          cpus: '0.25'
-          memory: 256M
-    # Health check configuration
+          cpus: "0.25"
+          memory: 128M
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    # Logging configuration
     logging:
-      driver: "json-file"
+      driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
         compress: "true"
 
-# Note: Using bind mount instead of named volume
-# Database is stored at /home/scott/databases on the host
-# This makes it easier to access, backup, and manage the database file directly
-# 
-# To backup: cp /home/scott/databases/wingspan.db /home/scott/databases/wingspan.db.backup
-# To restore: cp /home/scott/databases/wingspan.db.backup /home/scott/databases/wingspan.db
+volumes:
+  wingspan-db-prod:
+    driver: local
 
 networks:
   wingspan-network:

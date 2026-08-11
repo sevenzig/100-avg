@@ -10,6 +10,18 @@ A comprehensive design system for a Svelte-based web application tracking Wingsp
 - **Tests**: `npm run test` or `npm run test:watch` (Vitest; see `docs/development/ARCHITECTURE.md`).
 - **Architecture**: `docs/development/ARCHITECTURE.md` – stack, auth, data model, tests.
 
+## 🚀 Deploy (Namecheap Quasar / any VPS)
+
+Self-contained Docker: one app container + named SQLite volume. Schema creates itself on first request.
+
+1. SSH in as root, install Docker: `curl -fsSL https://get.docker.com | sh`
+2. Quasar (1GB): add swap before building — `fallocate -l 2G /swapfile && chmod 600 /swapfile && mkswap /swapfile && swapon /swapfile`
+3. Clone repo, then: `cp .env.production.example .env.production` and set `JWT_SECRET`, `ORIGIN`
+4. `docker compose -f docker-compose.prod.yml up -d --build`
+5. Open `http://YOUR_VPS_IP:3000` — register a user (no seed required)
+
+Later (HTTPS): put Caddy/Nginx on 80/443 reverse-proxying to `localhost:3000`, then set `ORIGIN=https://your.domain`.
+
 ## 📋 Design Documents
 
 This repository contains complete design documentation for the Wingspan Score Tracker application:

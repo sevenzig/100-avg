@@ -115,33 +115,26 @@ COPY --from=builder --chown=nodejs:nodejs /app/build ./build
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=builder --chown=nodejs:nodejs /app/static ./static
 
-# Database directory already created above with proper permissions
-# This directory will be used for volume mounting in docker-compose.prod.yml
-# The volume mount (wingspan-db-prod:/app/database) will override this directory
-# but the directory must exist in the image for the mount to work properly
-
-# Copy database file from builder stage if it exists (for initial seed data)
-# Volume mounting behavior:
-# - If volume is empty on first mount: contents from image (including seeded DB) are copied to volume
-# - If volume already has data: volume contents take precedence (persisted data is used)
-# - If no volume is mounted: seeded database from image will be used (but won't persist)
-# Using shell glob to handle case where file might not exist
+# Copy optional seed DB from builder if present; named volume overrides on first empty mount
 RUN --mount=from=builder,source=/app/database,target=/tmp/db \
     sh -c 'if ls /tmp/db/*.db 1> /dev/null 2>&1; then cp /tmp/db/*.db /app/database/ && chown nodejs:nodejs /app/database/*.db; fi'
 
-# Switch to non-root user
-USER nodejs
+# Entrypoint: fix volume perms as root, then drop to nodejs
+RUN apk add --no-cache su-exec
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Expose port (default SvelteKit port, can be overridden)
 EXPOSE 3000
 
 # Set environment variables (consolidate to reduce layers)
+# max-old-space-size 384 suits Quasar-class 1GB VPS (compose caps container at 512M)
 ENV NODE_ENV=production \
     PORT=3000 \
     HOST=0.0.0.0 \
     ORIGIN=http://localhost:3000 \
     DATABASE_PATH=/app/database/wingspan.db \
-    NODE_OPTIONS="--max-old-space-size=512" \
+    NODE_OPTIONS="--max-old-space-size=384" \
     BODY_SIZE_LIMIT=12582912
 
 # Health check with improved error handling
@@ -152,5 +145,6 @@ HEALTHCHECK --interval=30s \
             --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on('error', () => process.exit(1))"
 
-# Start the application
+# Entrypoint runs as root to fix DB volume perms, then drops to nodejs
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "build"]
