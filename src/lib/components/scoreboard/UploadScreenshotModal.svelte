@@ -1,37 +1,17 @@
 <script lang="ts">
-	import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+	import { createEventDispatcher } from 'svelte';
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import Input from '$lib/components/shared/Input.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import Card from '$lib/components/shared/Card.svelte';
-	import type { ExtractedGameData, ExtractedPlayer } from '$lib/types/screenshot-upload';
+	import type { ExtractedGameData } from '$lib/types/screenshot-upload';
+	import type { Platform } from '$lib/types/platform';
+	import { PLATFORMS, PLATFORM_LABELS, isValidPlatform } from '$lib/types/platform';
+	import type { Player } from '$lib/stores/league';
+	import { findUserByName } from '$lib/utils/user-lookup';
 
-	interface Player {
-		id: number;
-		username: string;
-		color?: string;
-	}
-
-	export let open = false;
-	export let leagueId: number;
-	export let leaguePlayers: Player[] = []; // Reserved for future player validation features
-
-	const dispatch = createEventDispatcher();
-
-	// Reference leaguePlayers to satisfy linter (reserved for future validation)
-	$: _leaguePlayersAvailable = leaguePlayers.length >= 0;
-
-	let selectedFile: File | null = null;
-	let imagePreview: string | null = null;
-	let uploading = false;
-	let processing = false;
-	let extractedData: ExtractedGameData | null = null;
-	let confidence = 0;
-	let warnings: string[] = [];
-	let error = '';
-	let dragOver = false;
-
-	let editedPlayers: Array<{
+	interface EditedPlayer {
+		rowId: string;
 		playerName: string;
 		placement: number;
 		totalScore: number;
@@ -42,42 +22,93 @@
 		foodOnCards: number;
 		tuckedCards: number;
 		nectar: number;
-	}> = [];
+		userId: number | null;
+		isNew: boolean;
+		matchOverridden: boolean;
+	}
 
-	let playedAt = new Date().toISOString().split('T')[0];
-	let allUsers: Array<{
-		id: number;
-		username: string;
-		steam_alias?: string | null;
-		android_alias?: string | null;
-		iphone_alias?: string | null;
-	}> = [];
+	let {
+		open = false,
+		leagueId,
+		leaguePlayers = []
+	}: {
+		open?: boolean;
+		leagueId: number;
+		leaguePlayers?: Player[];
+	} = $props();
+
+	const dispatch = createEventDispatcher();
+
+	let selectedFile = $state<File | null>(null);
+	let imagePreview = $state<string | null>(null);
+	let uploading = $state(false);
+	let processing = $state(false);
+	let extractedData = $state<ExtractedGameData | null>(null);
+	let confidence = $state(0);
+	let warnings = $state<string[]>([]);
+	let error = $state('');
+	let dragOver = $state(false);
+	let selectedPlatform = $state('');
+	let editedPlayers = $state<EditedPlayer[]>([]);
+	let playedAt = $state(new Date().toISOString().split('T')[0]);
 
 	const playerColors = ['#3B82F6', '#F59E0B', '#8B5CF6', '#10B981', '#EF4444'];
+	const selectClass =
+		'w-full min-h-[2.75rem] px-4 py-2.5 text-base border border-slate-300 rounded-md bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 touch-manipulation';
 
-	// Set up paste event listener when modal is open and in upload phase
-	$: {
-		if (open && !extractedData) {
-			window.addEventListener('paste', handlePaste);
-		} else {
-			window.removeEventListener('paste', handlePaste);
+	function lookupOptions() {
+		return {
+			platform: isValidPlatform(selectedPlatform) ? (selectedPlatform as Platform) : undefined,
+			users: leaguePlayers
+		};
+	}
+
+	function applyAutoMatch(forceAll = false) {
+		for (const player of editedPlayers) {
+			if (!forceAll && player.matchOverridden) continue;
+			const match = findUserByName(player.playerName, lookupOptions());
+			player.userId = match?.id ?? null;
+			player.isNew = false;
+			if (forceAll) {
+				player.matchOverridden = false;
+			}
 		}
 	}
 
-	onDestroy(() => {
-		window.removeEventListener('paste', handlePaste);
-	});
+	function matchedUsername(userId: number | null): string {
+		if (!userId) return '';
+		return leaguePlayers.find((p) => p.id === userId)?.username ?? '';
+	}
 
-	async function loadAllUsers() {
-		try {
-			const response = await fetch('/api/users');
-			if (response.ok) {
-				const data = await response.json();
-				allUsers = data.users || [];
-			}
-		} catch (e) {
-			console.error('Failed to load users:', e);
+	function handlePlatformChange() {
+		applyAutoMatch(false);
+	}
+
+	function handlePlayerNameInput(index: number) {
+		const player = editedPlayers[index];
+		if (player.matchOverridden) return;
+		const match = findUserByName(player.playerName, lookupOptions());
+		player.userId = match?.id ?? null;
+		player.isNew = false;
+	}
+
+	function handlePlayerSelect(index: number, event: Event) {
+		const target = event.target as HTMLSelectElement;
+		const player = editedPlayers[index];
+		player.matchOverridden = true;
+		player.isNew = false;
+		player.userId = target.value ? parseInt(target.value, 10) : null;
+		error = '';
+	}
+
+	function handleNewPlayerToggle(index: number) {
+		const player = editedPlayers[index];
+		player.matchOverridden = true;
+		player.isNew = !player.isNew;
+		if (player.isNew) {
+			player.userId = null;
 		}
+		error = '';
 	}
 
 	function handleFileSelect(event: Event) {
@@ -113,7 +144,6 @@
 		extractedData = null;
 		editedPlayers = [];
 
-		// Create preview
 		const reader = new FileReader();
 		reader.onload = (e) => {
 			imagePreview = e.target?.result as string;
@@ -122,12 +152,10 @@
 	}
 
 	async function handlePaste(event: ClipboardEvent) {
-		// Only handle paste when modal is open and we're in upload phase
 		if (!open || extractedData) {
 			return;
 		}
 
-		// Check if the paste is happening within our modal
 		const target = event.target as HTMLElement;
 		const modalElement = document.querySelector('[role="dialog"]');
 		if (modalElement && !modalElement.contains(target)) {
@@ -141,25 +169,21 @@
 			return;
 		}
 
-		// Find image in clipboard
 		for (let i = 0; i < items.length; i++) {
 			const item = items[i];
 			if (item.type.indexOf('image') !== -1) {
 				const blob = item.getAsFile();
 				if (blob) {
-					// Validate the blob is an image
 					if (!blob.type.match(/^image\/(png|jpeg|jpg)$/i)) {
 						error = 'Only PNG and JPEG images are supported';
 						return;
 					}
 
-					// Validate file size (10MB limit)
 					if (blob.size > 10 * 1024 * 1024) {
 						error = 'Image size exceeds 10MB limit';
 						return;
 					}
 
-					// Convert blob to File with a proper name
 					const file = new File([blob], `pasted-image-${Date.now()}.png`, {
 						type: blob.type || 'image/png'
 					});
@@ -185,9 +209,8 @@
 			formData.append('image', selectedFile);
 			formData.append('leagueId', leagueId.toString());
 
-			// Create AbortController for timeout handling
 			const controller = new AbortController();
-			const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+			const timeoutId = setTimeout(() => controller.abort(), 60000);
 
 			let response: Response;
 			try {
@@ -198,9 +221,9 @@
 				});
 			} catch (fetchError: any) {
 				clearTimeout(timeoutId);
-				// Handle network errors, timeouts, and abort errors
 				if (fetchError.name === 'AbortError') {
-					error = 'Request timed out. The image may be too large or the server is taking too long to process. Please try again.';
+					error =
+						'Request timed out. The image may be too large or the server is taking too long to process. Please try again.';
 				} else if (fetchError.name === 'TypeError' && fetchError.message.includes('fetch')) {
 					error = 'Network error. Please check your connection and try again.';
 				} else {
@@ -212,22 +235,18 @@
 				clearTimeout(timeoutId);
 			}
 
-			// Check if response is ok before parsing
 			if (!response.ok) {
-				// Try to parse error response, but handle non-JSON responses
 				let errorMessage = 'Failed to process screenshot';
 				try {
 					const errorData = await response.json();
 					errorMessage = errorData.error || errorMessage;
 				} catch {
-					// If response isn't JSON, use status text
 					errorMessage = response.statusText || `Server error (${response.status})`;
 				}
 				error = errorMessage;
 				return;
 			}
 
-			// Parse JSON response
 			let data: any;
 			try {
 				data = await response.json();
@@ -246,13 +265,17 @@
 			confidence = data.confidence || 0;
 			warnings = data.warnings || [];
 
-			// Initialize edited players from extracted data
 			if (!extractedData) {
 				error = 'No data extracted from screenshot';
 				return;
 			}
 
+			if (!selectedPlatform && extractedData.detectedPlatform && isValidPlatform(extractedData.detectedPlatform)) {
+				selectedPlatform = extractedData.detectedPlatform;
+			}
+
 			editedPlayers = extractedData.players.map((player) => ({
+				rowId: crypto.randomUUID(),
 				playerName: player.playerName,
 				placement: player.placement,
 				totalScore: player.totalScore,
@@ -262,13 +285,14 @@
 				eggs: player.scoringBreakdown.eggs,
 				foodOnCards: player.scoringBreakdown.foodOnCards,
 				tuckedCards: player.scoringBreakdown.tuckedCards,
-				nectar: player.scoringBreakdown.nectar
+				nectar: player.scoringBreakdown.nectar,
+				userId: null,
+				isNew: false,
+				matchOverridden: false
 			}));
 
-			// Load users for player matching
-			await loadAllUsers();
+			applyAutoMatch(true);
 		} catch (e: any) {
-			// Catch any other unexpected errors
 			if (e.name === 'AbortError') {
 				error = 'Request timed out. Please try again.';
 			} else if (e.name === 'TypeError' && e.message.includes('fetch')) {
@@ -296,7 +320,6 @@
 	}
 
 	function updatePlacements() {
-		// Sort by total score and update placements (ties get same placement)
 		const sorted = [...editedPlayers].sort((a, b) => b.totalScore - a.totalScore);
 		let rank = 1;
 		sorted.forEach((player, index) => {
@@ -310,57 +333,35 @@
 		});
 	}
 
-	function findUserByName(name: string): { id: number; username: string } | null {
-		const searchName = name.toLowerCase().trim();
-		
-		if (!searchName) {
-			return null;
-		}
-		
-		// Match against username and all platform aliases (case-insensitive)
-		const matchedUser = allUsers.find((u) => {
-			// Check username
-			if (u.username && u.username.toLowerCase().trim() === searchName) {
-				return true;
-			}
-			
-			// Check Steam alias
-			if (u.steam_alias && u.steam_alias.toLowerCase().trim() === searchName) {
-				return true;
-			}
-			
-			// Check Android alias
-			if (u.android_alias && u.android_alias.toLowerCase().trim() === searchName) {
-				return true;
-			}
-			
-			// Check iPhone alias
-			if (u.iphone_alias && u.iphone_alias.toLowerCase().trim() === searchName) {
-				return true;
-			}
-			
-			return false;
-		});
-		
-		return matchedUser ? { id: matchedUser.id, username: matchedUser.username } : null;
-	}
-
 	function validate(): boolean {
+		if (!isValidPlatform(selectedPlatform)) {
+			error = 'Please select a platform';
+			return false;
+		}
+
 		if (editedPlayers.length === 0) {
 			error = 'No players to save';
 			return false;
 		}
 
-		// Check that all players have names
 		for (let i = 0; i < editedPlayers.length; i++) {
 			const player = editedPlayers[i];
 			if (!player.playerName || player.playerName.trim().length === 0) {
 				error = `Player ${i + 1} must have a name`;
 				return false;
 			}
+			if (!player.isNew && !player.userId) {
+				error = `Player ${i + 1}: pick a league player or create new`;
+				return false;
+			}
 		}
 
-		// Check placements are rank-consistent with totalScore (ties allowed)
+		const pickedIds = editedPlayers.filter((p) => !p.isNew && p.userId).map((p) => p.userId);
+		if (new Set(pickedIds).size !== pickedIds.length) {
+			error = 'Each league player can only appear once';
+			return false;
+		}
+
 		const sorted = [...editedPlayers].sort((a, b) => b.totalScore - a.totalScore);
 		let expectedRank = 1;
 		for (let i = 0; i < sorted.length; i++) {
@@ -373,7 +374,6 @@
 			}
 		}
 
-		// Validate score totals
 		for (let i = 0; i < editedPlayers.length; i++) {
 			calculateTotal(i);
 			const player = editedPlayers[i];
@@ -404,26 +404,21 @@
 
 		uploading = true;
 		try {
-			// Prepare scores - match players to users
-			const scores = editedPlayers.map((player) => {
-				const user = findUserByName(player.playerName);
-				return {
-					userId: user?.id || null,
-					username: player.playerName,
-					isNew: !user,
-					placement: player.placement,
-					totalScore: player.totalScore,
-					birds: player.birds,
-					bonusCards: player.bonusCards,
-					endOfRoundGoals: player.endOfRoundGoals,
-					eggs: player.eggs,
-					foodOnCards: player.foodOnCards,
-					tuckedCards: player.tuckedCards,
-					nectar: player.nectar
-				};
-			});
+			const scores = editedPlayers.map((player) => ({
+				userId: player.isNew ? null : player.userId,
+				username: player.playerName,
+				isNew: player.isNew,
+				placement: player.placement,
+				totalScore: player.totalScore,
+				birds: player.birds,
+				bonusCards: player.bonusCards,
+				endOfRoundGoals: player.endOfRoundGoals,
+				eggs: player.eggs,
+				foodOnCards: player.foodOnCards,
+				tuckedCards: player.tuckedCards,
+				nectar: player.nectar
+			}));
 
-			// Save game using existing endpoint
 			const response = await fetch('/api/games', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -440,7 +435,6 @@
 				return;
 			}
 
-			// Success - close modal and refresh
 			handleClose();
 			dispatch('saved');
 		} catch (e) {
@@ -459,6 +453,7 @@
 		error = '';
 		warnings = [];
 		confidence = 0;
+		selectedPlatform = '';
 		playedAt = new Date().toISOString().split('T')[0];
 		dispatch('close');
 	}
@@ -475,13 +470,19 @@
 		return 'Low';
 	}
 
-	/** Move player at index to end of list (cycle for validation). */
 	function cyclePlayerToEnd(index: number) {
 		if (index < 0 || index >= editedPlayers.length) return;
 		const player = editedPlayers[index];
 		editedPlayers = [...editedPlayers.filter((_, i) => i !== index), player];
 	}
+
+	function handleWindowPaste(event: ClipboardEvent) {
+		if (!open || extractedData) return;
+		handlePaste(event);
+	}
 </script>
+
+<svelte:window onpaste={handleWindowPaste} />
 
 <Modal {open} title="Upload End of Game Screenshot" size="xl" on:close={handleClose}>
 	<div class="space-y-4 max-h-[80vh] overflow-y-auto">
@@ -495,27 +496,45 @@
 			<div class="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-yellow-800 text-sm">
 				<p class="font-semibold mb-1">Warnings:</p>
 				<ul class="list-disc list-inside space-y-1">
-					{#each warnings as warning}
+					{#each warnings as warning, i (`${i}-${warning}`)}
 						<li>{warning}</li>
 					{/each}
 				</ul>
 			</div>
 		{/if}
 
-		{#if !extractedData}
-			<!-- File Upload Section -->
-			<div>
-				<Input type="date" label="Date Played" bind:value={playedAt} required />
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+			<Input type="date" label="Date Played" bind:value={playedAt} required />
+			<div class="form-control w-full">
+				<label for="screenshot-platform" class="block text-sm font-medium text-slate-700 mb-1.5">
+					Platform
+					<span class="text-red-500 ml-1">*</span>
+				</label>
+				<select
+					id="screenshot-platform"
+					class={selectClass}
+					bind:value={selectedPlatform}
+					onchange={handlePlatformChange}
+				>
+					<option value="">Auto-detect</option>
+					{#each PLATFORMS as platform (platform)}
+						<option value={platform}>{PLATFORM_LABELS[platform]}</option>
+					{/each}
+				</select>
+			</div>
+		</div>
 
+		{#if !extractedData}
+			<div>
 				<div
-					class="mt-4 border-2 border-dashed rounded-lg p-8 text-center transition-colors {dragOver
+					class="mt-0 border-2 border-dashed rounded-lg p-8 text-center transition-colors {dragOver
 						? 'border-blue-500 bg-blue-50'
 						: 'border-slate-300 bg-slate-50'}"
 					role="button"
 					tabindex="0"
-					on:drop={handleDrop}
-					on:dragover={handleDragOver}
-					on:dragleave={handleDragLeave}
+					ondrop={handleDrop}
+					ondragover={handleDragOver}
+					ondragleave={handleDragLeave}
 				>
 					{#if imagePreview}
 						<div class="space-y-4">
@@ -527,10 +546,14 @@
 							<div class="text-sm text-slate-600">
 								{selectedFile?.name} ({(selectedFile?.size || 0) / 1024 / 1024} MB)
 							</div>
-							<Button variant="ghost" size="sm" on:click={() => {
-								selectedFile = null;
-								imagePreview = null;
-							}}>Remove</Button>
+							<Button
+								variant="ghost"
+								size="sm"
+								on:click={() => {
+									selectedFile = null;
+									imagePreview = null;
+								}}>Remove</Button
+							>
 						</div>
 					{:else}
 						<div class="space-y-4">
@@ -560,7 +583,7 @@
 									type="file"
 									class="sr-only"
 									accept="image/png,image/jpeg,image/jpg"
-									on:change={handleFileSelect}
+									onchange={handleFileSelect}
 								/>
 								<p class="mt-2 text-sm text-slate-600">or drag and drop</p>
 								<p class="text-xs text-slate-500 mt-1">PNG, JPG up to 10MB • Or paste (Ctrl+V / Cmd+V)</p>
@@ -578,9 +601,7 @@
 				{/if}
 			</div>
 		{:else}
-			<!-- Extracted Data Review Section -->
 			<div class="space-y-4">
-				<!-- Pinned uploaded image for validation -->
 				{#if imagePreview}
 					<div class="rounded-lg border border-slate-200 overflow-hidden bg-slate-50 shrink-0">
 						<img
@@ -591,7 +612,6 @@
 					</div>
 				{/if}
 
-				<!-- Header: Extracted Game Data | Score summary | Confidence -->
 				<div class="flex flex-wrap items-start gap-4">
 					<div class="shrink-0">
 						<h4 class="text-sm font-semibold text-slate-900">Extracted Game Data</h4>
@@ -601,19 +621,21 @@
 							</span>
 						</p>
 					</div>
-					<!-- Middle: table layout — row 1: player names, row 2: total scores -->
 					<div class="flex-1 min-w-0 flex justify-center">
 						<div
 							class="grid gap-x-4 gap-y-1 text-center"
 							style="grid-template-columns: repeat({editedPlayers.length}, minmax(0, 1fr));"
 						>
-							{#each editedPlayers as player}
+							{#each editedPlayers as player (player.rowId)}
 								{@const isWinner = player.placement === 1}
-								<span class="text-sm font-medium truncate {isWinner ? 'text-green-600' : 'text-red-600'}" title={player.playerName || 'Player'}>
+								<span
+									class="text-sm font-medium truncate {isWinner ? 'text-green-600' : 'text-red-600'}"
+									title={player.playerName || 'Player'}
+								>
 									{player.playerName || 'Player'}
 								</span>
 							{/each}
-							{#each editedPlayers as player}
+							{#each editedPlayers as player (player.rowId)}
 								<span class="text-sm font-mono font-semibold text-slate-900 tabular-nums">
 									{player.totalScore ?? 0}
 								</span>
@@ -621,14 +643,18 @@
 						</div>
 					</div>
 					<div class="shrink-0">
-						<Button variant="ghost" size="sm" on:click={() => {
-							extractedData = null;
-							editedPlayers = [];
-						}}>Start Over</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							on:click={() => {
+								extractedData = null;
+								editedPlayers = [];
+							}}>Start Over</Button
+						>
 					</div>
 				</div>
 
-				{#each editedPlayers as player, index}
+				{#each editedPlayers as player, index (player.rowId)}
 					{@const playerColor = playerColors[index % playerColors.length]}
 					<Card>
 						<div class="flex items-center justify-between mb-3">
@@ -647,7 +673,60 @@
 								bind:value={player.playerName}
 								placeholder="Enter player name"
 								required
+								on:input={() => handlePlayerNameInput(index)}
 							/>
+
+							<div>
+								<p class="text-xs mb-1.5 {player.isNew || player.userId ? 'text-slate-600' : 'text-amber-700'}">
+									{#if player.isNew}
+										Creating new user from "{player.playerName}"
+									{:else if player.userId}
+										Matched: {matchedUsername(player.userId)}
+									{:else}
+										No match — pick a league player or create new
+									{/if}
+								</p>
+								{#if player.isNew}
+									<div class="flex flex-col sm:flex-row gap-2">
+										<Input
+											type="text"
+											bind:value={player.playerName}
+											placeholder="New username"
+											required
+											className="flex-1"
+										/>
+										<Button
+											variant="ghost"
+											size="sm"
+											on:click={() => handleNewPlayerToggle(index)}
+											className="shrink-0 whitespace-nowrap w-full sm:w-auto"
+										>
+											Select
+										</Button>
+									</div>
+								{:else}
+									<div class="flex flex-row gap-2 items-stretch">
+										<Button
+											variant="primary"
+											size="sm"
+											on:click={() => handleNewPlayerToggle(index)}
+											className="shrink-0 whitespace-nowrap"
+										>
+											+ New
+										</Button>
+										<select
+											value={player.userId ?? ''}
+											onchange={(e) => handlePlayerSelect(index, e)}
+											class="flex-1 min-h-[2.75rem] px-3 py-2 text-base border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-slate-900 touch-manipulation min-w-0"
+										>
+											<option value="">— Select player —</option>
+											{#each leaguePlayers as leaguePlayer (leaguePlayer.id)}
+												<option value={leaguePlayer.id}>{leaguePlayer.username}</option>
+											{/each}
+										</select>
+									</div>
+								{/if}
+							</div>
 
 							<div class="grid grid-cols-3 md:grid-cols-9 gap-2">
 								<Input

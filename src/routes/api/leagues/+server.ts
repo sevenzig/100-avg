@@ -50,7 +50,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				SELECT 
 					u.id,
 					u.username,
-					lp.player_color as color
+					lp.player_color as color,
+					u.steam_alias,
+					u.android_alias,
+					u.iphone_alias
 				FROM 
 					league_players lp
 					JOIN users u ON lp.user_id = u.id
@@ -60,7 +63,14 @@ export const GET: RequestHandler = async ({ cookies }) => {
 					lp.player_color
 			`
 				)
-				.all(league.id) as Array<{ id: number; username: string; color: string }>;
+				.all(league.id) as Array<{
+				id: number;
+				username: string;
+				color: string;
+				steam_alias: string | null;
+				android_alias: string | null;
+				iphone_alias: string | null;
+			}>;
 
 			return {
 				id: league.id,
@@ -70,7 +80,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				players: players.map((p) => ({
 					id: p.id,
 					username: p.username,
-					color: p.color
+					color: p.color,
+					steam_alias: p.steam_alias,
+					android_alias: p.android_alias,
+					iphone_alias: p.iphone_alias
 				}))
 			};
 		})

@@ -1,10 +1,15 @@
 import { writable } from 'svelte/store';
 import type { Writable } from 'svelte/store';
 
+export type PlayerColor = 'player_1' | 'player_2' | 'player_3' | 'player_4' | 'player_5';
+
 export interface Player {
 	id: number;
 	username: string;
-	color: 'player_1' | 'player_2' | 'player_3';
+	color: PlayerColor;
+	steam_alias?: string | null;
+	android_alias?: string | null;
+	iphone_alias?: string | null;
 }
 
 export interface League {

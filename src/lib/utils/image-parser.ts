@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import sharp from 'sharp';
 import { env } from '$env/dynamic/private';
 import type { ExtractedGameData, ExtractedPlayer } from '$lib/types/screenshot-upload';
+import { isValidPlatform } from '$lib/types/platform';
 
 /** Anthropic limits base64 images to 5 MB. Raw buffer must stay under ~3.75 MB to fit. */
 const ANTHROPIC_MAX_BASE64_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -110,8 +111,16 @@ CRITICAL VERIFICATION:
 - If they don't match, re-read the values carefully - OCR errors are common with similar-looking digits (0/8, 1/7, 3/8, 5/6)
 - Player names are case-sensitive - preserve exact capitalization
 
+PLATFORM DETECTION:
+Identify which Wingspan client the screenshot is from:
+- "steam": PC/Steam desktop UI (typically landscape, windowed/desktop layout)
+- "android": Android mobile app
+- "iphone": iOS/iPhone mobile app
+If it is clearly mobile but Android vs iPhone is uncertain, pick the more likely one.
+
 Return ONLY valid JSON (no markdown, no explanation):
 {
+  "detectedPlatform": "steam" | "android" | "iphone",
   "players": [
     {
       "playerName": "ExactPlayerName",
@@ -159,6 +168,10 @@ Return ONLY valid JSON (no markdown, no explanation):
 		}
 
 		const parsedData = JSON.parse(jsonMatch[1]) as ExtractedGameData;
+
+		const rawPlatform = (parsedData as { detectedPlatform?: unknown }).detectedPlatform;
+		parsedData.detectedPlatform =
+			typeof rawPlatform === 'string' && isValidPlatform(rawPlatform) ? rawPlatform : undefined;
 
 		// Validate and calculate placements
 		if (!parsedData.players || !Array.isArray(parsedData.players)) {

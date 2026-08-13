@@ -31,7 +31,10 @@ interface ProcessedScore {
 	foodOnCards: number;
 	tuckedCards: number;
 	nectar: number;
+	addToLeague: boolean;
 }
+
+const LEAGUE_PLAYER_COLORS = ['player_1', 'player_2', 'player_3', 'player_4', 'player_5'] as const;
 
 function getUserId(cookies: Cookies): number | null {
 	const token = cookies.get('token');
@@ -92,6 +95,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		for (const score of scores as ScoreInput[]) {
 			let scoreUserId: number;
+			let addToLeague = false;
 
 			if (score.isNew && score.username) {
 				// First try to match by username or any platform alias (e.g. Steam name "hotnut" -> user sevenzig)
@@ -137,6 +141,7 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 						scoreUserId = userResult.lastInsertRowid as number;
 					}
 				}
+				addToLeague = true;
 			} else if (score.userId) {
 				scoreUserId = score.userId;
 			} else if (score.username) {
@@ -181,7 +186,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 				eggs: score.eggs || 0,
 				foodOnCards: score.foodOnCards || 0,
 				tuckedCards: score.tuckedCards || 0,
-				nectar: score.nectar || 0
+				nectar: score.nectar || 0,
+				addToLeague
 			});
 		}
 
@@ -245,6 +251,24 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 					score.tuckedCards,
 					score.nectar
 				);
+
+				if (score.addToLeague) {
+					const membership = db
+						.prepare('SELECT user_id FROM league_players WHERE league_id = ? AND user_id = ?')
+						.get(leagueId, score.scoreUserId);
+					if (!membership) {
+						const usedColors = db
+							.prepare('SELECT player_color FROM league_players WHERE league_id = ?')
+							.all(leagueId) as Array<{ player_color: string }>;
+						const used = new Set(usedColors.map((row) => row.player_color));
+						const nextColor = LEAGUE_PLAYER_COLORS.find((color) => !used.has(color));
+						if (nextColor) {
+							db.prepare(
+								'INSERT INTO league_players (league_id, user_id, player_color) VALUES (?, ?, ?)'
+							).run(leagueId, score.scoreUserId, nextColor);
+						}
+					}
+				}
 			}
 
 			return gameId;

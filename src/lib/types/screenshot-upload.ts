@@ -17,6 +17,8 @@ export interface ExtractedGameData {
 	players: ExtractedPlayer[];
 	/** Notes from the AI about extraction uncertainty or issues */
 	extractionNotes?: string;
+	/** Best-guess client the screenshot was taken on */
+	detectedPlatform?: 'steam' | 'android' | 'iphone';
 }
 
 export interface ParsingResult {
