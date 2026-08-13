@@ -4,6 +4,7 @@ import {
 	validateDisplayName,
 	validatePlatforms,
 	validatePlatformAliases,
+	validateRequiredOnboardingPlatforms,
 	validatePlacementsConsistentWithScores,
 	placementsFromTotalScores
 } from '$lib/utils/validation';
@@ -92,6 +93,23 @@ describe('validatePlatformAliases', () => {
 
 	it('rejects invalid platform keys', () => {
 		expect(validatePlatformAliases({ xbox: 'gamer' }).valid).toBe(false);
+	});
+});
+
+describe('validateRequiredOnboardingPlatforms', () => {
+	it('rejects empty platforms', () => {
+		expect(validateRequiredOnboardingPlatforms([], {}).valid).toBe(false);
+		expect(validateRequiredOnboardingPlatforms([], {}).error).toBe('Select at least one platform');
+	});
+
+	it('rejects selected platform with blank alias', () => {
+		expect(validateRequiredOnboardingPlatforms(['steam'], { steam: '' }).valid).toBe(false);
+		expect(validateRequiredOnboardingPlatforms(['steam'], { steam: '   ' }).valid).toBe(false);
+		expect(validateRequiredOnboardingPlatforms(['steam'], {}).valid).toBe(false);
+	});
+
+	it('accepts one platform with an alias', () => {
+		expect(validateRequiredOnboardingPlatforms(['steam'], { steam: 'hotnut' }).valid).toBe(true);
 	});
 });
 

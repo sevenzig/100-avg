@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { user, isAuthenticated } from '$lib/stores/auth';
 	import RegisterForm from '$lib/components/auth/RegisterForm.svelte';
 	import Card from '$lib/components/shared/Card.svelte';
+	import { safeJoinRedirect } from '$lib/utils/safe-redirect';
 
 	let error = '';
+	$: joinRedirect = safeJoinRedirect($page.url.searchParams.get('redirect'));
 
 	async function handleRegister(event: CustomEvent<{ username: string; email: string; password: string }>) {
 		error = '';
@@ -21,7 +24,7 @@
 			if (data.success) {
 				user.set(data.user);
 				isAuthenticated.set(true);
-				goto('/leagues');
+				goto(joinRedirect ?? '/leagues');
 			} else {
 				error = data.error || 'Registration failed';
 			}
@@ -40,6 +43,9 @@
 		</div>
 	{/if}
 	<div class="text-center mt-4">
-		<a href="/login" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Already have an account? Login</a>
+		<a
+			href={joinRedirect ? `/login?redirect=${encodeURIComponent(joinRedirect)}` : '/login'}
+			class="text-sm text-blue-600 hover:text-blue-700 font-medium"
+		>Already have an account? Login</a>
 	</div>
 </Card>

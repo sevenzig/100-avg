@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { user } from '$lib/stores/auth';
+	import { safeJoinRedirect } from '$lib/utils/safe-redirect';
 
 	onMount(async () => {
-		// Check if user is already authenticated
 		const currentUser = $user;
 		if (currentUser) {
-			goto('/leagues');
+			goto(safeJoinRedirect($page.url.searchParams.get('redirect')) ?? '/leagues');
 		}
 	});
 </script>

@@ -39,7 +39,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		// Hash password and create user
 		const passwordHash = await hashPassword(password);
 		const result = db
-			.prepare('INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)')
+			.prepare(
+				'INSERT INTO users (username, email, password_hash, onboarding_completed) VALUES (?, ?, ?, 0)'
+			)
 			.run(username, email, passwordHash);
 
 		const userId = result.lastInsertRowid as number;
@@ -61,7 +63,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 			user: {
 				id: userId,
 				username,
-				email
+				email,
+				onboardingCompleted: false
 			}
 		});
 	} catch (error) {

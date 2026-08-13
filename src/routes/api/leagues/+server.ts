@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/utils/db';
 import { getUserId } from '$lib/utils/auth';
+import { generateInviteCode } from '$lib/utils/league-invite';
 
 export const GET: RequestHandler = async ({ cookies }) => {
 	const userId = getUserId(cookies);
@@ -141,10 +142,9 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 
 		// Create league in transaction
 		const createLeague = db.transaction(() => {
-			// Insert league
 			const leagueResult = db
-				.prepare('INSERT INTO leagues (name, created_by) VALUES (?, ?)')
-				.run(name, userId);
+				.prepare('INSERT INTO leagues (name, created_by, invite_code) VALUES (?, ?, ?)')
+				.run(name, userId, generateInviteCode());
 			const leagueId = leagueResult.lastInsertRowid as number;
 
 			// Insert league players with colors

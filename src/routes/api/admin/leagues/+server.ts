@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/utils/db';
 import { getUserId, isAdmin, type CookieGetter, type DbLike } from '$lib/utils/auth';
+import { generateInviteCode } from '$lib/utils/league-invite';
 
 // Helper to check admin access
 function requireAdmin(cookies: CookieGetter, db: DbLike): number {
@@ -140,8 +141,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		const createLeague = db.transaction(() => {
 			// Insert league (admin can create for any user, use first player as creator)
 			const leagueResult = db
-				.prepare('INSERT INTO leagues (name, created_by) VALUES (?, ?)')
-				.run(name, playerIds[0]);
+				.prepare('INSERT INTO leagues (name, created_by, invite_code) VALUES (?, ?, ?)')
+				.run(name, playerIds[0], generateInviteCode());
 			const leagueId = leagueResult.lastInsertRowid as number;
 
 			// Insert league players with colors

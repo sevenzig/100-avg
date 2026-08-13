@@ -14,6 +14,9 @@
 	let detailedGames: Map<number, any> = new Map();
 	let hoveredPlayerId: number | null = null;
 	let hoveredGameId: number | null = null;
+	let inviteCopied = false;
+	let inviteLink = '';
+	let inviteError = '';
 
 	// Sorting state
 	type SortField = 'rank' | 'player' | 'avgPlacement' | 'firstPlace' | 'avgScore' | 'wins' | 'losses' | 'games' | 'birds' | 'bonusCards' | 'endOfRoundGoals' | 'eggs' | 'foodOnCards' | 'tuckedCards' | 'nectar';
@@ -80,6 +83,31 @@
 
 	function handleUploadScreenshot() {
 		activeModal.set('upload-screenshot');
+	}
+
+	async function handleInvite() {
+		inviteError = '';
+		try {
+			const response = await fetch(`/api/leagues/${leagueId}/invite`);
+			const data = await response.json();
+			if (!response.ok) {
+				inviteError = data.error || 'Could not create invite link';
+				return;
+			}
+			const url = `${window.location.origin}/join/${data.code}`;
+			inviteLink = url;
+			try {
+				await navigator.clipboard.writeText(url);
+				inviteCopied = true;
+				setTimeout(() => {
+					inviteCopied = false;
+				}, 2500);
+			} catch {
+				inviteCopied = false;
+			}
+		} catch {
+			inviteError = 'Could not create invite link';
+		}
 	}
 
 	async function handleGameSubmit(event: CustomEvent<{ playedAt: string; scores: any[] }>) {
@@ -282,12 +310,24 @@
 	{#if $currentLeague}
 		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-3 bg-white border-b border-slate-200 shrink-0">
 			<h1 class="text-lg sm:text-xl font-bold text-slate-900 truncate">{$currentLeague.name}</h1>
-			<div class="flex gap-2 flex-shrink-0">
+			<div class="flex gap-2 flex-shrink-0 flex-wrap">
+				<Button variant="ghost" size="sm" on:click={handleInvite} className="flex-1 sm:flex-initial">
+					{inviteCopied ? 'Link copied' : 'Invite players'}
+				</Button>
 				<a href="/leagues/{leagueId}/compare" class="inline-flex items-center justify-center font-medium rounded-md transition-colors px-3 py-1.5 text-sm min-h-[2.75rem] bg-transparent text-slate-700 hover:bg-slate-100 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 flex-1 sm:flex-initial">Compare players</a>
 				<Button variant="ghost" size="sm" on:click={handleUploadScreenshot} className="flex-1 sm:flex-initial">📷 Upload Screenshot</Button>
 				<Button variant="primary" size="sm" on:click={handleAddGame} className="flex-1 sm:flex-initial">+ Add Game</Button>
 			</div>
 		</div>
+		{#if inviteError || (inviteLink && !inviteCopied)}
+			<div class="px-3 sm:px-6 py-2 bg-slate-50 border-b border-slate-200 text-sm text-slate-700">
+				{#if inviteError}
+					<span class="text-red-700">{inviteError}</span>
+				{:else}
+					<span>Copy this invite link: <code class="break-all">{inviteLink}</code></span>
+				{/if}
+			</div>
+		{/if}
 	{/if}
 
 	{#if loading}

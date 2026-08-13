@@ -3,6 +3,7 @@ import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
+import { generateInviteCode } from '$lib/utils/league-invite';
 
 // Get database path - use absolute path for better-sqlite3
 const dbDir = join(process.cwd(), 'database');
@@ -192,6 +193,49 @@ export function initDatabase() {
 		} catch (error: any) {
 			if (!error.message.includes('duplicate column')) {
 				console.warn('Warning: Could not add is_super_admin column:', error.message);
+			}
+		}
+	}
+
+	// Existing users skip first-login; register INSERT sets this to 0
+	if (!columnNames.includes('onboarding_completed')) {
+		try {
+			database.exec('ALTER TABLE users ADD COLUMN onboarding_completed INTEGER NOT NULL DEFAULT 1');
+		} catch (error: any) {
+			if (!error.message.includes('duplicate column')) {
+				console.warn('Warning: Could not add onboarding_completed column:', error.message);
+			}
+		}
+	}
+
+	ensureLeagueInviteCodes(database);
+}
+
+function ensureLeagueInviteCodes(database: Database.Database) {
+	const leagueColumns = database.prepare('PRAGMA table_info(leagues)').all() as Array<{
+		name: string;
+	}>;
+	// ponytail: one reusable join code per league. Add expiry/revoke if links get leaked.
+	if (!leagueColumns.some((col) => col.name === 'invite_code')) {
+		database.exec('ALTER TABLE leagues ADD COLUMN invite_code TEXT');
+	}
+	database.exec(
+		'CREATE UNIQUE INDEX IF NOT EXISTS idx_leagues_invite_code ON leagues(invite_code)'
+	);
+
+	const missing = database
+		.prepare('SELECT id FROM leagues WHERE invite_code IS NULL')
+		.all() as Array<{ id: number }>;
+	if (missing.length === 0) return;
+
+	const update = database.prepare('UPDATE leagues SET invite_code = ? WHERE id = ?');
+	for (const league of missing) {
+		for (let attempt = 0; attempt < 5; attempt++) {
+			try {
+				update.run(generateInviteCode(), league.id);
+				break;
+			} catch {
+				// unique collision — retry
 			}
 		}
 	}

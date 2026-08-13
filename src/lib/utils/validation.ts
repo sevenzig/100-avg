@@ -2,8 +2,13 @@
  * Shared validation utilities for profile and platform data
  */
 
-import type { Platform } from '$lib/types/platform';
-import { PLATFORMS, validatePlatformAlias, getPlatformAliasError } from '$lib/types/platform';
+import type { Platform, PlatformAliases } from '$lib/types/platform';
+import {
+	PLATFORMS,
+	PLATFORM_LABELS,
+	validatePlatformAlias,
+	getPlatformAliasError
+} from '$lib/types/platform';
 
 export interface ValidationResult {
 	valid: boolean;
@@ -96,6 +101,41 @@ export function validatePlatformAliases(
 			return {
 				valid: false,
 				error: getPlatformAliasError(platform as Platform, alias, maxLength)
+			};
+		}
+	}
+
+	return { valid: true };
+}
+
+/**
+ * First-login: at least one platform, each selected platform needs a non-empty alias.
+ */
+export function validateRequiredOnboardingPlatforms(
+	platforms: unknown,
+	platformAliases: unknown
+): ValidationResult {
+	const platformsResult = validatePlatforms(platforms);
+	if (!platformsResult.valid) {
+		return platformsResult;
+	}
+
+	if (!Array.isArray(platforms) || platforms.length === 0) {
+		return { valid: false, error: 'Select at least one platform' };
+	}
+
+	const aliasesResult = validatePlatformAliases(platformAliases);
+	if (!aliasesResult.valid) {
+		return aliasesResult;
+	}
+
+	const aliases = (platformAliases ?? {}) as PlatformAliases;
+	for (const platform of platforms as Platform[]) {
+		const alias = aliases[platform];
+		if (!alias || typeof alias !== 'string' || !alias.trim()) {
+			return {
+				valid: false,
+				error: `A ${PLATFORM_LABELS[platform]} name is required`
 			};
 		}
 	}

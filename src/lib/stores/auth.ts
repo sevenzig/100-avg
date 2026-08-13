@@ -8,6 +8,7 @@ export interface User {
 	createdAt?: string;
 	isAdmin?: boolean;
 	isSuperAdmin?: boolean;
+	onboardingCompleted?: boolean;
 }
 
 export const user: Writable<User | null> = writable(null);
