@@ -1,4 +1,3 @@
-import { getDb } from './db';
 import type { Platform } from '$lib/types/platform';
 import { PLATFORMS } from '$lib/types/platform';
 
@@ -18,8 +17,8 @@ export interface UserLookupResult {
 export interface FindUserByNameOptions {
 	/** Prefer this platform's alias, then username, then other aliases */
 	platform?: Platform;
-	/** If provided, search this list instead of the database */
-	users?: LookupUser[];
+	/** League members (or other in-memory users) to search */
+	users: LookupUser[];
 }
 
 const ALIAS_COLUMNS: Record<Platform, 'steam_alias' | 'android_alias' | 'iphone_alias'> = {
@@ -72,71 +71,14 @@ function matchInUsers(
 	return anyMatch ? toResult(anyMatch) : null;
 }
 
-function matchInDatabase(searchName: string, platform?: Platform): UserLookupResult | null {
-	const db = getDb();
-
-	if (platform) {
-		const preferredCol = ALIAS_COLUMNS[platform];
-		const preferred = db
-			.prepare(
-				`SELECT id, username FROM users WHERE LOWER(TRIM(${preferredCol})) = ? LIMIT 1`
-			)
-			.get(searchName) as { id: number; username: string } | undefined;
-		if (preferred) return preferred;
-
-		const byUsername = db
-			.prepare('SELECT id, username FROM users WHERE LOWER(TRIM(username)) = ? LIMIT 1')
-			.get(searchName) as { id: number; username: string } | undefined;
-		if (byUsername) return byUsername;
-
-		const others = PLATFORMS.filter((p) => p !== platform);
-		const firstOther = others[0];
-		const secondOther = others[1];
-		if (!firstOther || !secondOther) {
-			return null;
-		}
-		const other = db
-			.prepare(
-				`
-				SELECT id, username
-				FROM users
-				WHERE LOWER(TRIM(${ALIAS_COLUMNS[firstOther]})) = ?
-				   OR LOWER(TRIM(${ALIAS_COLUMNS[secondOther]})) = ?
-				LIMIT 1
-			`
-			)
-			.get(searchName, searchName) as { id: number; username: string } | undefined;
-
-		return other || null;
-	}
-
-	const user = db
-		.prepare(
-			`
-		SELECT id, username
-		FROM users
-		WHERE LOWER(TRIM(username)) = ?
-		   OR LOWER(TRIM(steam_alias)) = ?
-		   OR LOWER(TRIM(android_alias)) = ?
-		   OR LOWER(TRIM(iphone_alias)) = ?
-		LIMIT 1
-	`
-		)
-		.get(searchName, searchName, searchName, searchName) as
-		| { id: number; username: string }
-		| undefined;
-
-	return user || null;
-}
-
 /**
  * Finds a user by name, checking username and platform aliases (case-insensitive).
  * With `platform`, prefers that alias, then username, then other aliases.
- * With `users`, searches that list (e.g. league members) instead of the database.
+ * Searches the provided `users` list (e.g. league members).
  */
 export function findUserByName(
 	name: string,
-	options: FindUserByNameOptions = {}
+	options: FindUserByNameOptions
 ): UserLookupResult | null {
 	const searchName = normalize(name);
 
@@ -144,9 +86,5 @@ export function findUserByName(
 		return null;
 	}
 
-	if (options.users) {
-		return matchInUsers(searchName, options.users, options.platform);
-	}
-
-	return matchInDatabase(searchName, options.platform);
+	return matchInUsers(searchName, options.users, options.platform);
 }
