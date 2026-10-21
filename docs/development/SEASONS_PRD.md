@@ -3,7 +3,7 @@
 status: draft
 last-updated: 2026-10-21
 
-91-day seasons for Wingspan Score Tracker. When a season ends, it archives. Users can review every past season. Every player has a career average and a season average.
+Bi-monthly seasons for Wingspan Score Tracker. When a season ends, it archives. Users can review every past season. Every player has a career average and a season average.
 
 This is the spec to implement against. Do not add features listed under Out of scope.
 
@@ -17,7 +17,7 @@ Players need a clock that resets standings on a fixed cadence, without losing hi
 
 ## 2. Goals
 
-1. Start a new season every **91 days**, on a shared app-wide calendar.
+1. Start a new season every **two calendar months**, on a shared app-wide UTC calendar.
 2. Archive the season that just ended. Keep every game. Make the archive available for review.
 3. Show two averages for every player in a given context (league or profile):
    - **Career average** — mean `total_score` across all of that player's games in that context.
@@ -43,8 +43,8 @@ Answer these before implementation. Defaults are listed so work can start if the
 
 | # | Question | Default if unanswered |
 |---|---|---|
-| Q1 | Season 1 start date? | UTC midnight of `MIN(games.played_at)` at migration. If there are no games, UTC midnight of the migration day. Freeze that value. Do not recompute it later. |
-| Q2 | Time zone for the 91-day boundary? | UTC. Display dates in the user's locale. |
+| Q1 | Season 1 start date? | UTC midnight of the even-month pair that contains `MIN(games.played_at)` at migration (Dec–Jan, Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov). If there are no games, the pair that contains the migration day. Freeze that value. Do not recompute it later. |
+| Q2 | Time zone for the boundary? | UTC. Display dates in the user's locale. |
 | Q3 | Can admins still edit games in an archived season? | Yes. Existing create/update/delete rules stay. Recompute stats from current rows. |
 | Q4 | Do profile charts default to the current season or to the last N games across all seasons? | Current season. Career average remains visible as a number, not as the chart window. |
 
@@ -56,7 +56,7 @@ Answer these before implementation. Defaults are listed so work can start if the
 - Admin UI to create, rename, shorten, or skip a season
 - Push/email at rollover
 - Resetting league membership when a season starts
-- Changing the 91-day length after launch
+- Changing the two-month pairing after launch
 - Deleting games at rollover
 
 ## 6. Users and stories
@@ -81,14 +81,23 @@ Answer these before implementation. Defaults are listed so work can start if the
 
 ### 7.1 Length and bounds
 
-- Length: **91 days**.
+- Length: **two calendar months**, UTC. Pairs start on even months:
+
+```
+Dec–Jan, Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov
+```
+
+November ends on the 30th. December–January crosses the year. February includes the 29th in leap years.
+
 - Season `n` (1-based) occupies the half-open interval:
 
 ```
-start_at(n) = epoch + (n - 1) * 91 days
-end_at(n)   = epoch + n * 91 days
+start_at(n) = epoch + (n - 1) two-month pairs
+end_at(n)   = epoch + n two-month pairs
 season n    = [start_at(n), end_at(n))
 ```
+
+Example: `[2026-08-01T00:00:00.000Z, 2026-10-01T00:00:00.000Z)` is Aug–Sep.
 
 - A game with `played_at == end_at(n)` belongs to season `n + 1`.
 - Store `start_at` and `end_at` as UTC ISO datetimes.
@@ -96,7 +105,7 @@ season n    = [start_at(n), end_at(n))
 ### 7.2 Labels
 
 - Number: `1`, `2`, `3`, …
-- Display: `Season {n}` plus the date range, e.g. `Season 3 · Jul 2 – Oct 1, 2026`.
+- Display: `Season {n}` plus the inclusive date range, e.g. `Season 6 · Oct 1 – Nov 30, 2026`.
 - Status: `active` if `now < end_at`, else `archived`.
 - Exactly one season is `active`.
 
@@ -138,7 +147,7 @@ CREATE TABLE IF NOT EXISTS app_settings (
 );
 ```
 
-`season_length_days` is stored so the number is explicit. Do not expose a UI to change it.
+`season_length_days` is leftover schema. The clock is calendar pairs, not this number. Do not expose a UI to change it.
 
 ### 8.2 `seasons`
 
@@ -220,7 +229,7 @@ Default: current season.
 
 Add a season control in the header, to the left of the action buttons:
 
-- Label: `Season 3 · Jul 2 – Oct 1`
+- Label: `Season 6 · Oct 1 – Nov 30`
 - Options: every season, newest first, archived seasons marked `Archived`
 - Changing it reloads stats and the game list for that season only
 
@@ -265,15 +274,14 @@ Auth required.
 
 ```json
 {
-  "epoch": "2026-01-15T00:00:00.000Z",
-  "lengthDays": 91,
-  "currentSeasonId": 4,
+  "epoch": "2025-12-01T00:00:00.000Z",
+  "currentSeasonId": 6,
   "seasons": [
     {
-      "id": 4,
-      "number": 4,
-      "startAt": "2026-10-13T00:00:00.000Z",
-      "endAt": "2027-01-12T00:00:00.000Z",
+      "id": 6,
+      "number": 6,
+      "startAt": "2026-10-01T00:00:00.000Z",
+      "endAt": "2026-12-01T00:00:00.000Z",
       "status": "active"
     },
     {
@@ -364,7 +372,7 @@ Each step has a check. Do not start the next step until the check passes.
 1. Settings row, `seasons` table, `games.season_id`, backfill.
    Verify: `season_id IS NULL` count is 0. Seasons cover epoch → now with no gaps and no overlaps.
 2. Helper: `ensureSeasons(now)`, `seasonForDate(playedAt)`.
-   Verify: unit tests for boundaries (`end_at - 1s` → season n, `end_at` → season n+1), 91-day length, missing-row insert.
+   Verify: unit tests for boundaries (`end_at - 1s` → season n, `end_at` → season n+1), Aug–Sep / Oct–Nov pairs, missing-row insert.
 3. `GET /api/seasons`.
    Verify: one `active` season; archived seasons have `end_at <= now`.
 
@@ -395,7 +403,7 @@ Do not ship UI before Phase 1. Phases 2–4 can merge in one PR if the tests fro
 
 The feature is done when all of these are true:
 
-1. A season ends 91 days after it starts, in UTC, without a scheduled job.
+1. A season ends at 00:00 UTC on the first day of the next even month, without a scheduled job.
 2. The next season is active on the first request after that instant.
 3. Every game belongs to exactly one season, from `played_at`.
 4. League default view is the current season.
@@ -417,7 +425,7 @@ The feature is done when all of these are true:
 | Backdated POST into an archive | Game appears in that archive's list and stats |
 | PUT `played_at` across boundary | Leaves old season, joins new one |
 | All-games `?season=1` | Does not list season 2 games |
-| Epoch with no games | Season 1 starts at migration UTC midnight |
+| Epoch with no games | Season 1 starts at the current pair's UTC midnight |
 | Two concurrent requests at rollover | One extra season row, not two (unique `number`) |
 
 ## 16. Risks
@@ -451,5 +459,5 @@ Not a complete list. Touch only what the phase needs.
 
 1. "User data" in the request means profile stats and per-player league stats, not a new user-level table of cached averages.
 2. "Available for user review" means the same league, profile, all-games, and compare screens with a season selector, not a separate archive area.
-3. 91 days is exact, not "about a quarter."
+3. Pairs are calendar months, not a fixed day count. Nov 30, not Nov 31.
 4. The existing all-time league view goes away as the default. Career numbers remain, but standings rank by the selected season.

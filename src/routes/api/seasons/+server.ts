@@ -24,7 +24,6 @@ export const GET: RequestHandler = async ({ cookies }) => {
 
 	return json({
 		epoch: settings?.season_epoch ?? null,
-		lengthDays: settings?.season_length_days ?? 91,
 		currentSeasonId: current?.id ?? null,
 		seasons: seasons.map(seasonToJson)
 	});

@@ -137,7 +137,7 @@ Get current authenticated user information.
 
 ## Season Endpoints
 
-Seasons are 91 days on one UTC calendar. Stats default to the current season. Pass `season` (number) or `seasonId` (row id) to review an archive.
+Seasons are two calendar months on one UTC calendar (Dec–Jan, Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov). Stats default to the current season. Pass `season` (number) or `seasonId` (row id) to review an archive.
 
 ### GET /api/seasons
 List seasons, newest first. Creates the next season on the first request after a boundary.
@@ -145,15 +145,14 @@ List seasons, newest first. Creates the next season on the first request after a
 **Response** (200 OK):
 ```json
 {
-  "epoch": "2026-01-15T00:00:00.000Z",
-  "lengthDays": 91,
-  "currentSeasonId": 4,
+  "epoch": "2025-12-01T00:00:00.000Z",
+  "currentSeasonId": 6,
   "seasons": [
     {
-      "id": 4,
-      "number": 4,
-      "startAt": "2026-10-13T00:00:00.000Z",
-      "endAt": "2027-01-12T00:00:00.000Z",
+      "id": 6,
+      "number": 6,
+      "startAt": "2026-10-01T00:00:00.000Z",
+      "endAt": "2026-12-01T00:00:00.000Z",
       "status": "active"
     }
   ]

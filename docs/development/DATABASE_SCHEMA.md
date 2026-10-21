@@ -325,8 +325,8 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 - Add audit logging table if needed
 - Add indexes based on query performance analysis
 
-### Seasons (91-day UTC clock)
-`app_settings.season_epoch` is frozen at first boot (UTC midnight of the earliest game, or today). `games.season_id` comes from `played_at`. See `docs/development/SEASONS_PRD.md`.
+### Seasons (bi-monthly UTC clock)
+`app_settings.season_epoch` is frozen at first boot to the even-month pair that contains the earliest game (or today). Pairs: Dec–Jan, Feb–Mar, Apr–May, Jun–Jul, Aug–Sep, Oct–Nov. `games.season_id` comes from `played_at`. `season_length_days` is unused leftover schema. See `docs/development/SEASONS_PRD.md`.
 
 ## Backup Strategy
 

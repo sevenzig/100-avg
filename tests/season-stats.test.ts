@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { queryLeagueStats } from '$lib/utils/league-stats';
 import {
-	addDaysIso,
 	ensureSeasonSchema,
 	ensureSeasons,
 	getSeasonByNumber,
@@ -69,7 +68,7 @@ describe('queryLeagueStats', () => {
 			'INSERT INTO scores (game_id, user_id, placement, total_score) VALUES (1, 2, 2, 70)'
 		).run();
 
-		const season2Start = addDaysIso(epoch, 91);
+		const season2Start = '2026-02-01T00:00:00.000Z';
 		db.prepare('INSERT INTO games (league_id, played_at, created_by) VALUES (1, ?, 1)').run(
 			season2Start
 		);
