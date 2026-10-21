@@ -4,6 +4,7 @@ import type { Cookies } from '@sveltejs/kit';
 import { getDb } from '$lib/utils/db';
 import { verifyToken, hashPassword } from '$lib/utils/auth';
 import { validatePlacementsConsistentWithScores } from '$lib/utils/validation';
+import { PLAY_DATE_BEFORE_EPOCH, seasonForDate } from '$lib/utils/seasons';
 
 interface ScoreInput {
 	userId?: number;
@@ -69,6 +70,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		}
 
 		const db = getDb();
+
+		const season = seasonForDate(db, playedAt);
+		if (!season) {
+			return json({ success: false, error: PLAY_DATE_BEFORE_EPOCH }, { status: 400 });
+		}
 
 		// Check if user is an admin
 		const user = db
@@ -225,8 +231,10 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 		// Create game and scores in transaction
 		const createGame = db.transaction(() => {
 			const gameResult = db
-				.prepare('INSERT INTO games (league_id, played_at, created_by) VALUES (?, ?, ?)')
-				.run(leagueId, playedAt, currentUserId);
+				.prepare(
+					'INSERT INTO games (league_id, played_at, created_by, season_id) VALUES (?, ?, ?, ?)'
+				)
+				.run(leagueId, playedAt, currentUserId, season.id);
 			const gameId = gameResult.lastInsertRowid as number;
 
 			const insertScore = db.prepare(
@@ -283,7 +291,8 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 					id: gameId,
 					leagueId,
 					playedAt,
-					createdBy: currentUserId
+					createdBy: currentUserId,
+					seasonId: season.id
 				}
 			},
 			{ status: 201 }

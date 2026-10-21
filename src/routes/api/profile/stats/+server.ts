@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/utils/db';
 import { getUserId } from '$lib/utils/auth';
+import { resolveSeasonParam, seasonToJson } from '$lib/utils/seasons';
 
 interface PlacementRow {
 	game_id: number;
@@ -54,6 +55,37 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
 	const db = getDb();
 
+	const requested = url.searchParams.has('season') || url.searchParams.has('seasonId');
+	const season = resolveSeasonParam(db, url.searchParams);
+	if (!season) {
+		return json({ error: requested ? 'Invalid season' : 'No active season' }, { status: 400 });
+	}
+
+	const careerRow = db
+		.prepare(
+			`
+			SELECT AVG(s.total_score) as avg_score, COUNT(*) as total
+			FROM scores s
+			JOIN games g ON s.game_id = g.id
+			WHERE s.user_id = ?
+				AND (? IS NULL OR g.league_id = ?)
+		`
+		)
+		.get(userId, leagueId, leagueId) as { avg_score: number | null; total: number };
+
+	const seasonRow = db
+		.prepare(
+			`
+			SELECT AVG(s.total_score) as avg_score, COUNT(*) as total
+			FROM scores s
+			JOIN games g ON s.game_id = g.id
+			WHERE s.user_id = ?
+				AND (? IS NULL OR g.league_id = ?)
+				AND g.season_id = ?
+		`
+		)
+		.get(userId, leagueId, leagueId, season.id) as { avg_score: number | null; total: number };
+
 	// Get placement history
 	const placementHistory = db
 		.prepare(
@@ -67,11 +99,12 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 			JOIN games g ON s.game_id = g.id
 			WHERE s.user_id = ?
 				AND (? IS NULL OR g.league_id = ?)
+				AND g.season_id = ?
 			ORDER BY g.played_at DESC
 			LIMIT ?
 		`
 		)
-		.all(userId, leagueId, leagueId, matches) as PlacementRow[];
+		.all(userId, leagueId, leagueId, season.id, matches) as PlacementRow[];
 
 	// Get category averages
 	const categoryAverages = db
@@ -90,11 +123,12 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 			JOIN games g ON s.game_id = g.id
 			WHERE s.user_id = ?
 				AND (? IS NULL OR g.league_id = ?)
+				AND g.season_id = ?
 			ORDER BY g.played_at DESC
 			LIMIT ?
 		`
 		)
-		.get(userId, leagueId, leagueId, matches) as CategoryAvgRow | undefined;
+		.get(userId, leagueId, leagueId, season.id, matches) as CategoryAvgRow | undefined;
 
 	// Get recent scores
 	const recentScores = db
@@ -108,11 +142,12 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 			JOIN games g ON s.game_id = g.id
 			WHERE s.user_id = ?
 				AND (? IS NULL OR g.league_id = ?)
+				AND g.season_id = ?
 			ORDER BY g.played_at DESC
 			LIMIT 10
 		`
 		)
-		.all(userId, leagueId, leagueId) as RecentScoreRow[];
+		.all(userId, leagueId, leagueId, season.id) as RecentScoreRow[];
 
 	// Get detailed game scores with breakdown
 	const gameScores = db
@@ -133,11 +168,12 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 			JOIN games g ON s.game_id = g.id
 			WHERE s.user_id = ?
 				AND (? IS NULL OR g.league_id = ?)
+				AND g.season_id = ?
 			ORDER BY g.played_at ASC
 			LIMIT ?
 		`
 		)
-		.all(userId, leagueId, leagueId, matches) as GameScoreRow[];
+		.all(userId, leagueId, leagueId, season.id, matches) as GameScoreRow[];
 
 	// Add game numbers (1, 2, 3, ...)
 	const gameScoresWithNumbers = gameScores.map((row, index) => ({
@@ -156,6 +192,11 @@ export const GET: RequestHandler = async ({ cookies, url }) => {
 
 	return json({
 		stats: {
+			careerAverageScore: careerRow.avg_score,
+			seasonAverageScore: seasonRow.avg_score,
+			careerTotalGames: careerRow.total || 0,
+			seasonTotalGames: seasonRow.total || 0,
+			season: seasonToJson(season),
 			placementHistory: placementHistory.map((row) => ({
 				gameId: row.game_id,
 				date: row.date,

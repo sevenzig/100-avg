@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { currentLeague } from '$lib/stores/league';
 	import { user } from '$lib/stores/auth';
 	import EditGameModal from '$lib/components/scoreboard/EditGameModal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
+	import SeasonSelect from '$lib/components/shared/SeasonSelect.svelte';
+	import { loadSeasonList, type Season } from '$lib/utils/season-client';
 
 	type GameSummary = {
 		id: number;
@@ -48,6 +51,9 @@
 	let deleteConfirmGameId: number | null = null;
 	let deleteLoading = false;
 	let actionError = '';
+	let seasons: Season[] = [];
+	let selectedSeasonNumber: number | null = null;
+	let selectedSeason: Season | null = null;
 
 	// Check if current user can manage games in this league
 	$: canManageGames = $user?.isSuperAdmin || ($user?.id && $currentLeague?.createdBy === $user.id);
@@ -61,6 +67,7 @@
 
 	onMount(async () => {
 		if (leagueId > 0) {
+			await loadSeasons();
 			await loadLeague();
 			await loadPage(1);
 		} else {
@@ -68,6 +75,35 @@
 			error = 'Invalid league';
 		}
 	});
+
+	async function loadSeasons() {
+		const data = await loadSeasonList();
+		seasons = data.seasons;
+		const fromUrl = parseInt($page.url.searchParams.get('season') || '', 10);
+		if (!Number.isNaN(fromUrl) && seasons.some((s) => s.number === fromUrl)) {
+			selectedSeasonNumber = fromUrl;
+		} else {
+			selectedSeasonNumber = seasons.find((s) => s.status === 'active')?.number ?? seasons[0]?.number ?? null;
+		}
+		selectedSeason = seasons.find((s) => s.number === selectedSeasonNumber) ?? null;
+	}
+
+	function seasonQs() {
+		return selectedSeasonNumber ? `season=${selectedSeasonNumber}` : '';
+	}
+
+	async function handleSeasonChange(number: number) {
+		selectedSeasonNumber = number;
+		selectedSeason = seasons.find((s) => s.number === number) ?? null;
+		const params = new URLSearchParams($page.url.searchParams);
+		params.set('season', String(number));
+		await goto(`${$page.url.pathname}?${params.toString()}`, {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true
+		});
+		await loadPage(1);
+	}
 
 	async function loadLeague() {
 		try {
@@ -87,7 +123,10 @@
 		error = '';
 		const offset = (pageNum - 1) * limit;
 		try {
-			const res = await fetch(`/api/leagues/${leagueId}/games?limit=${limit}&offset=${offset}`);
+			const season = seasonQs();
+			const res = await fetch(
+				`/api/leagues/${leagueId}/games?limit=${limit}&offset=${offset}${season ? `&${season}` : ''}`
+			);
 			if (!res.ok) {
 				error = 'Failed to load games';
 				return;
@@ -95,6 +134,7 @@
 			const data = await res.json();
 			games = data.games;
 			totalGames = data.total;
+			if (data.season) selectedSeason = data.season;
 			currentPage = pageNum;
 			expandedGameId = null;
 		} catch (e) {
@@ -294,16 +334,21 @@
 	{/if}
 
 	{#if $currentLeague}
-		<div class="flex items-center justify-between px-3 sm:px-6 py-3 bg-white border-b border-slate-200 shrink-0">
-			<div class="flex items-center gap-3">
+		<div class="flex items-center justify-between gap-3 px-3 sm:px-6 py-3 bg-white border-b border-slate-200 shrink-0 flex-wrap">
+			<div class="flex items-center gap-3 min-w-0">
 				<a
-					href="/leagues/{leagueId}"
+					href="/leagues/{leagueId}{selectedSeasonNumber ? `?season=${selectedSeasonNumber}` : ''}"
 					class="text-slate-600 hover:text-slate-900 text-sm font-medium"
 				>
 					← Back to league
 				</a>
-				<h1 class="text-lg sm:text-xl font-bold text-slate-900">{$currentLeague.name} – All Games</h1>
+				<h1 class="text-lg sm:text-xl font-bold text-slate-900 truncate">{$currentLeague.name} – All Games</h1>
 			</div>
+			<SeasonSelect
+				seasons={seasons}
+				selectedNumber={selectedSeasonNumber}
+				onchange={handleSeasonChange}
+			/>
 		</div>
 	{/if}
 
@@ -318,7 +363,13 @@
 	{:else if games.length === 0}
 		<div class="flex-1 flex items-center justify-center">
 			<div class="text-center">
-				<p class="text-slate-600 mb-4">No games recorded yet in this league.</p>
+				<p class="text-slate-600 mb-4">
+					{#if selectedSeason?.status === 'archived'}
+						No games in Season {selectedSeason.number} for this league.
+					{:else}
+						No games this season yet.
+					{/if}
+				</p>
 				<a href="/leagues/{leagueId}" class="text-blue-600 hover:text-blue-700 font-medium">← Back to league</a>
 			</div>
 		</div>

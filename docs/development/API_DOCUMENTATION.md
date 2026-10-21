@@ -135,6 +135,33 @@ Get current authenticated user information.
 
 ---
 
+## Season Endpoints
+
+Seasons are 91 days on one UTC calendar. Stats default to the current season. Pass `season` (number) or `seasonId` (row id) to review an archive.
+
+### GET /api/seasons
+List seasons, newest first. Creates the next season on the first request after a boundary.
+
+**Response** (200 OK):
+```json
+{
+  "epoch": "2026-01-15T00:00:00.000Z",
+  "lengthDays": 91,
+  "currentSeasonId": 4,
+  "seasons": [
+    {
+      "id": 4,
+      "number": 4,
+      "startAt": "2026-10-13T00:00:00.000Z",
+      "endAt": "2027-01-12T00:00:00.000Z",
+      "status": "active"
+    }
+  ]
+}
+```
+
+---
+
 ## League Endpoints
 
 ### GET /api/leagues
@@ -285,7 +312,11 @@ Get detailed information about a specific league.
 ### GET /api/leagues/[id]/stats
 Get comprehensive statistics for all players in a league.
 
-**Request**: No body required
+**Request Query Parameters**:
+- `season`: season number (optional, default: current)
+- `seasonId`: season row id (optional)
+
+`averageScore` is the selected season. `careerAverageScore` is all games in the league. Averages are `null` when the player has no games in that window.
 
 **Response** (200 OK):
 ```json
@@ -556,6 +587,8 @@ Get all games for a league (for history/charts).
 **Request Query Parameters**:
 - `limit`: number (optional, default: 50, max: 100)
 - `offset`: number (optional, default: 0)
+- `season`: season number (optional, default: current)
+- `seasonId`: season row id (optional)
 
 **Response** (200 OK):
 ```json

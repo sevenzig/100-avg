@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Card from '$lib/components/shared/Card.svelte';
 	import ProfileEditForm from '$lib/components/profile/ProfileEditForm.svelte';
 	import ScoringChart from '$lib/components/profile/ScoringChart.svelte';
 	import PlacementHistoryChart from '$lib/components/profile/PlacementHistoryChart.svelte';
 	import CategoryAveragesChart from '$lib/components/profile/CategoryAveragesChart.svelte';
 	import RecentScoresChart from '$lib/components/profile/RecentScoresChart.svelte';
+	import SeasonSelect from '$lib/components/shared/SeasonSelect.svelte';
+	import { formatAvg, loadSeasonList, type Season } from '$lib/utils/season-client';
 
 	interface Profile {
 		id: number;
@@ -22,6 +26,10 @@
 	}
 
 	interface UserStats {
+		careerAverageScore: number | null;
+		seasonAverageScore: number | null;
+		careerTotalGames: number;
+		seasonTotalGames: number;
 		placementHistory: Array<{
 			gameId: number;
 			date: string;
@@ -64,6 +72,9 @@
 	let saving = false;
 	let error = '';
 	let selectedChart: 'scoring' | 'placement' | 'category' | 'recent' = 'scoring';
+	let seasons: Season[] = [];
+	let selectedSeasonNumber: number | null = null;
+	let careerAverageScore: number | null = null;
 
 	async function loadProfile() {
 		try {
@@ -82,12 +93,38 @@
 		}
 	}
 
+	async function loadSeasons() {
+		const data = await loadSeasonList();
+		seasons = data.seasons;
+		const fromUrl = parseInt($page.url.searchParams.get('season') || '', 10);
+		if (!Number.isNaN(fromUrl) && seasons.some((s) => s.number === fromUrl)) {
+			selectedSeasonNumber = fromUrl;
+		} else {
+			selectedSeasonNumber =
+				seasons.find((s) => s.status === 'active')?.number ?? seasons[0]?.number ?? null;
+		}
+	}
+
+	async function handleSeasonChange(number: number) {
+		selectedSeasonNumber = number;
+		const params = new URLSearchParams($page.url.searchParams);
+		params.set('season', String(number));
+		await goto(`${$page.url.pathname}?${params.toString()}`, {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true
+		});
+		await loadStats();
+	}
+
 	async function loadStats() {
 		try {
-			const response = await fetch('/api/profile/stats?matches=20');
+			const season = selectedSeasonNumber ? `&season=${selectedSeasonNumber}` : '';
+			const response = await fetch(`/api/profile/stats?matches=20${season}`);
 			if (response.ok) {
 				const data = await response.json();
 				stats = data.stats;
+				careerAverageScore = data.stats?.careerAverageScore ?? careerAverageScore;
 			}
 		} catch (e: any) {
 			console.error('Error loading stats:', e);
@@ -128,6 +165,7 @@
 	}
 
 	onMount(async () => {
+		await loadSeasons();
 		await Promise.all([loadProfile(), loadStats()]);
 		loading = false;
 	});
@@ -163,6 +201,27 @@
 			<div class="w-full lg:w-[60%]">
 				<Card padding="p-4">
 					<div class="space-y-2">
+						<div class="flex flex-wrap items-end justify-between gap-3">
+							<div class="flex gap-6">
+								<div>
+									<div class="text-xs uppercase tracking-wider text-slate-500">Career avg</div>
+									<div class="text-2xl font-semibold font-mono tabular-nums text-slate-900">
+										{formatAvg(careerAverageScore)}
+									</div>
+								</div>
+								<div>
+									<div class="text-xs uppercase tracking-wider text-slate-500">Season avg</div>
+									<div class="text-2xl font-semibold font-mono tabular-nums text-slate-900">
+										{formatAvg(stats?.seasonAverageScore)}
+									</div>
+								</div>
+							</div>
+							<SeasonSelect
+								seasons={seasons}
+								selectedNumber={selectedSeasonNumber}
+								onchange={handleSeasonChange}
+							/>
+						</div>
 						<div class="flex items-center justify-between">
 							<div>
 								{#if selectedChart === 'scoring'}

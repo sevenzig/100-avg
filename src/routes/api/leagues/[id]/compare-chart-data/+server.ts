@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/utils/db';
 import { getUserId } from '$lib/utils/auth';
+import { resolveSeasonParam, seasonToJson } from '$lib/utils/seasons';
 
 export const GET: RequestHandler = async ({ params, cookies, url }) => {
 	const userId = getUserId(cookies);
@@ -72,19 +73,25 @@ export const GET: RequestHandler = async ({ params, cookies, url }) => {
 		}
 	}
 
+	const requested = url.searchParams.has('season') || url.searchParams.has('seasonId');
+	const season = resolveSeasonParam(db, url.searchParams);
+	if (!season) {
+		return json({ error: requested ? 'Invalid season' : 'No active season' }, { status: 400 });
+	}
+
 	// Get games ordered by played_at ASC (oldest first)
 	const gameRows = db
 		.prepare(
 			`SELECT id, DATE(played_at) as date, played_at
 			FROM games
-			WHERE league_id = ?
+			WHERE league_id = ? AND season_id = ?
 			ORDER BY played_at ASC
 			LIMIT ?`
 		)
-		.all(leagueId, limit) as Array<{ id: number; date: string; played_at: string }>;
+		.all(leagueId, season.id, limit) as Array<{ id: number; date: string; played_at: string }>;
 
 	if (gameRows.length === 0) {
-		return json({ games: [], series: [] });
+		return json({ season: seasonToJson(season), games: [], series: [] });
 	}
 
 	const gameIds = gameRows.map((g) => g.id);
@@ -150,5 +157,5 @@ export const GET: RequestHandler = async ({ params, cookies, url }) => {
 		})
 		.filter(Boolean);
 
-	return json({ games, series });
+	return json({ season: seasonToJson(season), games, series });
 };

@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { user } from '$lib/stores/auth';
 	import { currentLeague, leagueStats } from '$lib/stores/league';
 	import Button from '$lib/components/shared/Button.svelte';
+	import SeasonSelect from '$lib/components/shared/SeasonSelect.svelte';
+	import { formatAvg, loadSeasonList, type Season } from '$lib/utils/season-client';
 	import ComparisonScoreOverTimeChart from '$lib/components/compare/ComparisonScoreOverTimeChart.svelte';
 	import ComparisonCategoryAveragesChart from '$lib/components/compare/ComparisonCategoryAveragesChart.svelte';
 	import type { LeagueStats } from '$lib/stores/league';
@@ -44,6 +47,8 @@
 		color: string;
 		scores: Array<number | null>;
 	}> = [];
+	let seasons: Season[] = [];
+	let selectedSeasonNumber: number | null = null;
 
 	$: leagueId = parseInt($page.params.id, 10);
 	$: leagueIdValid = Number.isFinite(leagueId);
@@ -53,16 +58,48 @@
 	}
 
 	onMount(async () => {
-		if (leagueIdValid) await loadData();
+		if (leagueIdValid) {
+			await loadSeasons();
+			await loadData();
+		}
 	});
+
+	async function loadSeasons() {
+		const data = await loadSeasonList();
+		seasons = data.seasons;
+		const fromUrl = parseInt($page.url.searchParams.get('season') || '', 10);
+		if (!Number.isNaN(fromUrl) && seasons.some((s) => s.number === fromUrl)) {
+			selectedSeasonNumber = fromUrl;
+		} else {
+			selectedSeasonNumber =
+				seasons.find((s) => s.status === 'active')?.number ?? seasons[0]?.number ?? null;
+		}
+	}
+
+	function seasonQs() {
+		return selectedSeasonNumber ? `season=${selectedSeasonNumber}` : '';
+	}
+
+	async function handleSeasonChange(number: number) {
+		selectedSeasonNumber = number;
+		const params = new URLSearchParams($page.url.searchParams);
+		params.set('season', String(number));
+		await goto(`${$page.url.pathname}?${params.toString()}`, {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true
+		});
+		await loadData();
+	}
 
 	async function loadData() {
 		loading = true;
 		error = '';
 		try {
+			const qs = seasonQs();
 			const [leagueRes, statsRes] = await Promise.all([
 				fetch(`/api/leagues/${leagueId}`),
-				fetch(`/api/leagues/${leagueId}/stats`)
+				fetch(`/api/leagues/${leagueId}/stats${qs ? `?${qs}` : ''}`)
 			]);
 			if (!leagueRes.ok) {
 				error = 'Failed to load league';
@@ -104,13 +141,17 @@
 		: selectedStats;
 	$: canAddMore = selectedIds.length < MAX_OTHER_PLAYERS;
 
-	// Fetch chart data when comparison players change
-	$: if (comparisonPlayers.length > 0 && leagueIdValid) {
-		loadChartData(comparisonPlayers);
-	} else {
-		chartGames = [];
-		chartSeries = [];
-		chartError = '';
+	// Fetch chart data when comparison players or season change
+	$: selectedSeasonNumber, comparisonPlayers, leagueIdValid, refreshChart();
+
+	function refreshChart() {
+		if (comparisonPlayers.length > 0 && leagueIdValid) {
+			loadChartData(comparisonPlayers);
+		} else {
+			chartGames = [];
+			chartSeries = [];
+			chartError = '';
+		}
 	}
 
 	async function loadChartData(players: LeagueStats[]) {
@@ -118,7 +159,10 @@
 		chartError = '';
 		try {
 			const ids = players.map((p) => p.userId).join(',');
-			const res = await fetch(`/api/leagues/${leagueId}/compare-chart-data?userIds=${ids}&limit=30`);
+			const season = seasonQs();
+			const res = await fetch(
+				`/api/leagues/${leagueId}/compare-chart-data?userIds=${ids}&limit=30${season ? `&${season}` : ''}`
+			);
 			if (!res.ok) {
 				const data = await res.json().catch(() => ({}));
 				chartError = data.error || 'Failed to load chart data';
@@ -147,24 +191,24 @@
 	}
 
 	function getNumericValue(stat: LeagueStats, key: string): number {
-		if (key === 'avgPlacement') return stat.avgPlacement;
-		if (key === 'averageScore') return stat.averageScore;
+		if (key === 'avgPlacement') return stat.avgPlacement ?? 0;
+		if (key === 'averageScore') return stat.averageScore ?? 0;
 		const b = stat.avgBreakdown;
 		switch (key) {
 			case 'birds':
-				return b.birds;
+				return b.birds ?? 0;
 			case 'bonusCards':
-				return b.bonusCards;
+				return b.bonusCards ?? 0;
 			case 'endOfRoundGoals':
-				return b.endOfRoundGoals;
+				return b.endOfRoundGoals ?? 0;
 			case 'eggs':
-				return b.eggs;
+				return b.eggs ?? 0;
 			case 'foodOnCards':
-				return b.foodOnCards;
+				return b.foodOnCards ?? 0;
 			case 'tuckedCards':
-				return b.tuckedCards;
+				return b.tuckedCards ?? 0;
 			case 'nectar':
-				return b.nectar;
+				return b.nectar ?? 0;
 			default:
 				return 0;
 		}
@@ -191,7 +235,14 @@
 				{/if}
 				<span class="text-slate-900 font-medium">Compare players</span>
 			</div>
-			<h1 class="text-xl font-bold text-slate-900">Compare players</h1>
+			<div class="flex items-center justify-between gap-3 flex-wrap">
+				<h1 class="text-xl font-bold text-slate-900">Compare players</h1>
+				<SeasonSelect
+					seasons={seasons}
+					selectedNumber={selectedSeasonNumber}
+					onchange={handleSeasonChange}
+				/>
+			</div>
 		</div>
 	</div>
 
@@ -288,7 +339,7 @@
 														? 'font-bold text-emerald-900'
 														: 'text-slate-900'}"
 												>
-													{key === 'avgPlacement' || key === 'averageScore' ? val.toFixed(2) : val.toFixed(1)}
+													{key === 'avgPlacement' || key === 'averageScore' ? formatAvg(val, 2) : formatAvg(val)}
 												</span>
 											</td>
 										{/each}

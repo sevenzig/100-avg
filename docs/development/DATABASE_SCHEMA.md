@@ -253,12 +253,28 @@ CREATE TABLE IF NOT EXISTS league_players (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS app_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    season_epoch TEXT NOT NULL,
+    season_length_days INTEGER NOT NULL DEFAULT 91
+);
+
+CREATE TABLE IF NOT EXISTS seasons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    number INTEGER UNIQUE NOT NULL,
+    start_at TEXT NOT NULL,
+    end_at TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('active', 'archived')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Games table
 CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     league_id INTEGER NOT NULL,
     played_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     created_by INTEGER NOT NULL,
+    season_id INTEGER REFERENCES seasons(id),
     FOREIGN KEY (league_id) REFERENCES leagues(id) ON DELETE CASCADE,
     FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -287,6 +303,9 @@ CREATE TABLE IF NOT EXISTS scores (
 CREATE INDEX IF NOT EXISTS idx_scores_user_id ON scores(user_id);
 CREATE INDEX IF NOT EXISTS idx_scores_game_id ON scores(game_id);
 CREATE INDEX IF NOT EXISTS idx_games_league_id ON games(league_id);
+CREATE INDEX IF NOT EXISTS idx_games_season_id ON games(season_id);
+CREATE INDEX IF NOT EXISTS idx_games_league_season ON games(league_id, season_id);
+CREATE INDEX IF NOT EXISTS idx_seasons_status ON seasons(status);
 CREATE INDEX IF NOT EXISTS idx_league_players_league ON league_players(league_id);
 CREATE INDEX IF NOT EXISTS idx_league_players_user ON league_players(user_id);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -305,6 +324,9 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 - Add soft delete columns if needed
 - Add audit logging table if needed
 - Add indexes based on query performance analysis
+
+### Seasons (91-day UTC clock)
+`app_settings.season_epoch` is frozen at first boot (UTC midnight of the earliest game, or today). `games.season_id` comes from `played_at`. See `docs/development/SEASONS_PRD.md`.
 
 ## Backup Strategy
 

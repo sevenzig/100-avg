@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { currentLeague, leagueStats, leagues } from '$lib/stores/league';
 	import { activeModal } from '$lib/stores/ui';
 	import AddGameModal from '$lib/components/scoreboard/AddGameModal.svelte';
 	import UploadScreenshotModal from '$lib/components/scoreboard/UploadScreenshotModal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
+	import SeasonSelect from '$lib/components/shared/SeasonSelect.svelte';
 	import type { LeagueStats } from '$lib/stores/league';
+	import { formatAvg, loadSeasonList, seasonQuery, type Season } from '$lib/utils/season-client';
 
 	let loading = true;
 	let error = '';
@@ -17,6 +20,9 @@
 	let inviteCopied = false;
 	let inviteLink = '';
 	let inviteError = '';
+	let seasons: Season[] = [];
+	let selectedSeasonNumber: number | null = null;
+	let selectedSeason: Season | null = null;
 
 	// Sorting state
 	type SortField = 'rank' | 'player' | 'avgPlacement' | 'firstPlace' | 'avgScore' | 'wins' | 'losses' | 'games' | 'birds' | 'bonusCards' | 'endOfRoundGoals' | 'eggs' | 'foodOnCards' | 'tuckedCards' | 'nectar';
@@ -27,8 +33,39 @@
 	$: leagueId = parseInt($page.params.id);
 
 	onMount(async () => {
+		await loadSeasons();
 		await loadLeagueData();
 	});
+
+	async function loadSeasons() {
+		const data = await loadSeasonList();
+		seasons = data.seasons;
+		const fromUrl = parseInt($page.url.searchParams.get('season') || '', 10);
+		if (!Number.isNaN(fromUrl) && seasons.some((s) => s.number === fromUrl)) {
+			selectedSeasonNumber = fromUrl;
+		} else {
+			selectedSeasonNumber = seasons.find((s) => s.status === 'active')?.number ?? seasons[0]?.number ?? null;
+		}
+		selectedSeason = seasons.find((s) => s.number === selectedSeasonNumber) ?? null;
+	}
+
+	function seasonQs() {
+		const qs = seasonQuery($page.url.searchParams);
+		return qs ? `?${qs}` : selectedSeasonNumber ? `?season=${selectedSeasonNumber}` : '';
+	}
+
+	async function handleSeasonChange(number: number) {
+		selectedSeasonNumber = number;
+		selectedSeason = seasons.find((s) => s.number === number) ?? null;
+		const params = new URLSearchParams($page.url.searchParams);
+		params.set('season', String(number));
+		await goto(`${$page.url.pathname}?${params.toString()}`, {
+			replaceState: true,
+			keepFocus: true,
+			noScroll: true
+		});
+		await loadLeagueData();
+	}
 
 	async function loadLeagueData() {
 		loading = true;
@@ -43,15 +80,17 @@
 			const leagueData = await leagueResponse.json();
 			currentLeague.set(leagueData.league);
 
+			const qs = seasonQs();
 			// Load stats
-			const statsResponse = await fetch(`/api/leagues/${leagueId}/stats`);
+			const statsResponse = await fetch(`/api/leagues/${leagueId}/stats${qs}`);
 			if (statsResponse.ok) {
 				const statsData = await statsResponse.json();
 				leagueStats.set(statsData.stats);
+				if (statsData.season) selectedSeason = statsData.season;
 			}
 
 			// Load game history
-			const gamesResponse = await fetch(`/api/leagues/${leagueId}/games`);
+			const gamesResponse = await fetch(`/api/leagues/${leagueId}/games${qs}`);
 			if (gamesResponse.ok) {
 				const gamesData = await gamesResponse.json();
 				gameHistory = gamesData.games;
@@ -185,10 +224,10 @@
 	}
 
 	// Helper function to get numeric value for sorting with zero detection
-	function getSortValue(value: number): { value: number; isZero: boolean } {
+	function getSortValue(value: number | null | undefined): { value: number; isZero: boolean } {
 		return {
 			value: value || 0,
-			isZero: value === 0 || isNaN(value) || value === null || value === undefined
+			isZero: value === 0 || value == null || Number.isNaN(value)
 		};
 	}
 
@@ -310,15 +349,25 @@
 	{#if $currentLeague}
 		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-3 sm:px-6 py-3 bg-white border-b border-slate-200 shrink-0">
 			<h1 class="text-lg sm:text-xl font-bold text-slate-900 truncate">{$currentLeague.name}</h1>
-			<div class="flex gap-2 flex-shrink-0 flex-wrap">
+			<div class="flex gap-2 flex-shrink-0 flex-wrap items-center">
+				<SeasonSelect
+					seasons={seasons}
+					selectedNumber={selectedSeasonNumber}
+					onchange={handleSeasonChange}
+				/>
 				<Button variant="ghost" size="sm" on:click={handleInvite} className="flex-1 sm:flex-initial">
 					{inviteCopied ? 'Link copied' : 'Invite players'}
 				</Button>
-				<a href="/leagues/{leagueId}/compare" class="inline-flex items-center justify-center font-medium rounded-md transition-colors px-3 py-1.5 text-sm min-h-[2.75rem] bg-transparent text-slate-700 hover:bg-slate-100 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 flex-1 sm:flex-initial">Compare players</a>
+				<a href="/leagues/{leagueId}/compare{seasonQs()}" class="inline-flex items-center justify-center font-medium rounded-md transition-colors px-3 py-1.5 text-sm min-h-[2.75rem] bg-transparent text-slate-700 hover:bg-slate-100 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 flex-1 sm:flex-initial">Compare players</a>
 				<Button variant="ghost" size="sm" on:click={handleUploadScreenshot} className="flex-1 sm:flex-initial">📷 Upload Screenshot</Button>
 				<Button variant="primary" size="sm" on:click={handleAddGame} className="flex-1 sm:flex-initial">+ Add Game</Button>
 			</div>
 		</div>
+		{#if selectedSeason?.status === 'archived'}
+			<div class="px-3 sm:px-6 py-2 bg-amber-50 border-b border-amber-200 text-sm text-amber-900">
+				Viewing archived Season {selectedSeason.number}. New games still use the play date.
+			</div>
+		{/if}
 		{#if inviteError || (inviteLink && !inviteCopied)}
 			<div class="px-3 sm:px-6 py-2 bg-slate-50 border-b border-slate-200 text-sm text-slate-700">
 				{#if inviteError}
@@ -578,26 +627,29 @@
 									</div>
 
 									<!-- Player Name -->
-									<div class="col-span-2">
-										<div class="flex items-center gap-2">
+									<div class="col-span-2 min-w-0">
+										<div class="flex items-center gap-2 min-w-0">
 											<div
 												class="w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full shrink-0"
 												style="background-color: {playerColor};"
 											></div>
 											<span class="font-semibold text-slate-900 truncate" style="color: {playerColor};">
 												{stat.username}
+												{#if stat.careerAverageScore != null}
+													<span class="ml-1 font-normal text-slate-500">Career {formatAvg(stat.careerAverageScore)}</span>
+												{/if}
 											</span>
 										</div>
 									</div>
 
 									<!-- Avg Placement -->
 									<div class="col-span-1 text-center font-mono text-slate-900 tabular-nums">
-										{stat.avgPlacement.toFixed(2)}
+										{formatAvg(stat.avgPlacement, 2)}
 									</div>
 
 									<!-- Avg Score -->
 									<div class="col-span-1 text-center font-mono font-semibold text-slate-900 tabular-nums">
-										{stat.averageScore.toFixed(1)}
+										{formatAvg(stat.averageScore)}
 									</div>
 
 									<!-- Scoring Breakdown - Compact with visible labels -->
@@ -605,65 +657,65 @@
 										<div class="grid grid-cols-7 gap-0.5 text-xs sm:text-[10px]">
 											<div
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-blue-50 text-blue-700 group-hover:bg-blue-100 active:bg-blue-200 transition-colors cursor-pointer"
-												title={`Birds - Average points from bird cards played (Avg: ${stat.avgBreakdown.birds.toFixed(1)} pts)`}
+												title={`Birds - Average points from bird cards played (Avg: ${formatAvg(stat.avgBreakdown.birds)} pts)`}
 											>
 												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Birds</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
-													{stat.avgBreakdown.birds.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.birds)}
 												</div>
 											</div>
 											<div
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-green-50 text-green-700 group-hover:bg-green-100 active:bg-green-200 transition-colors cursor-pointer"
-												title={`Bonus Cards - Average points from bonus card objectives (Avg: ${stat.avgBreakdown.bonusCards.toFixed(1)} pts)`}
+												title={`Bonus Cards - Average points from bonus card objectives (Avg: ${formatAvg(stat.avgBreakdown.bonusCards)} pts)`}
 											>
 												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Bonus</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
-													{stat.avgBreakdown.bonusCards.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.bonusCards)}
 												</div>
 											</div>
 											<div
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-yellow-50 text-yellow-700 group-hover:bg-yellow-100 active:bg-yellow-200 transition-colors cursor-pointer"
-												title={`End of Round Goals - Average points from round-end goal achievements (Avg: ${stat.avgBreakdown.endOfRoundGoals.toFixed(1)} pts)`}
+												title={`End of Round Goals - Average points from round-end goal achievements (Avg: ${formatAvg(stat.avgBreakdown.endOfRoundGoals)} pts)`}
 											>
 												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Goals</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
-													{stat.avgBreakdown.endOfRoundGoals.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.endOfRoundGoals)}
 												</div>
 											</div>
 											<div
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-amber-50 text-amber-700 group-hover:bg-amber-100 active:bg-amber-200 transition-colors cursor-pointer"
-												title={`Eggs - Average points from eggs laid on bird cards (Avg: ${stat.avgBreakdown.eggs.toFixed(1)} pts)`}
+												title={`Eggs - Average points from eggs laid on bird cards (Avg: ${formatAvg(stat.avgBreakdown.eggs)} pts)`}
 											>
 												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Eggs</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
-													{stat.avgBreakdown.eggs.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.eggs)}
 												</div>
 											</div>
 											<div
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-red-50 text-red-700 group-hover:bg-red-100 active:bg-red-200 transition-colors cursor-pointer"
-												title={`Food on Cards - Average points from food tokens on bird cards (Avg: ${stat.avgBreakdown.foodOnCards.toFixed(1)} pts)`}
+												title={`Food on Cards - Average points from food tokens on bird cards (Avg: ${formatAvg(stat.avgBreakdown.foodOnCards)} pts)`}
 											>
 												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Cache</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
-													{stat.avgBreakdown.foodOnCards.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.foodOnCards)}
 												</div>
 											</div>
 											<div
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-purple-50 text-purple-700 group-hover:bg-purple-100 active:bg-purple-200 transition-colors cursor-pointer"
-												title={`Tucked Cards - Average points from cards tucked under bird cards (Avg: ${stat.avgBreakdown.tuckedCards.toFixed(1)} pts)`}
+												title={`Tucked Cards - Average points from cards tucked under bird cards (Avg: ${formatAvg(stat.avgBreakdown.tuckedCards)} pts)`}
 											>
 												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Tucked</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
-													{stat.avgBreakdown.tuckedCards.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.tuckedCards)}
 												</div>
 											</div>
 											<div
 												class="flex flex-col items-center px-0.5 py-0.5 rounded bg-pink-50 text-pink-700 group-hover:bg-pink-100 active:bg-pink-200 transition-colors cursor-pointer"
-												title={`Nectar - Average points from nectar tokens, Oceania expansion (Avg: ${stat.avgBreakdown.nectar.toFixed(1)} pts)`}
+												title={`Nectar - Average points from nectar tokens, Oceania expansion (Avg: ${formatAvg(stat.avgBreakdown.nectar)} pts)`}
 											>
 												<div class="font-semibold leading-tight text-[9px] sm:text-[8px]">Nectar</div>
 												<div class="font-mono tabular-nums text-[10px] sm:text-[9px] leading-tight mt-0.5">
-													{stat.avgBreakdown.nectar.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.nectar)}
 												</div>
 											</div>
 										</div>
@@ -706,43 +758,43 @@
 											<div class="text-center">
 												<div class="text-slate-500 mb-1">Birds</div>
 												<div class="font-mono font-semibold text-slate-900">
-													{stat.avgBreakdown.birds.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.birds)}
 												</div>
 											</div>
 											<div class="text-center">
 												<div class="text-slate-500 mb-1">Bonus</div>
 												<div class="font-mono font-semibold text-slate-900">
-													{stat.avgBreakdown.bonusCards.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.bonusCards)}
 												</div>
 											</div>
 											<div class="text-center">
 												<div class="text-slate-500 mb-1">Goals</div>
 												<div class="font-mono font-semibold text-slate-900">
-													{stat.avgBreakdown.endOfRoundGoals.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.endOfRoundGoals)}
 												</div>
 											</div>
 											<div class="text-center">
 												<div class="text-slate-500 mb-1">Eggs</div>
 												<div class="font-mono font-semibold text-slate-900">
-													{stat.avgBreakdown.eggs.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.eggs)}
 												</div>
 											</div>
 											<div class="text-center">
 												<div class="text-slate-500 mb-1">Food</div>
 												<div class="font-mono font-semibold text-slate-900">
-													{stat.avgBreakdown.foodOnCards.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.foodOnCards)}
 												</div>
 											</div>
 											<div class="text-center">
 												<div class="text-slate-500 mb-1">Tucked</div>
 												<div class="font-mono font-semibold text-slate-900">
-													{stat.avgBreakdown.tuckedCards.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.tuckedCards)}
 												</div>
 											</div>
 											<div class="text-center">
 												<div class="text-slate-500 mb-1">Nectar</div>
 												<div class="font-mono font-semibold text-slate-900">
-													{stat.avgBreakdown.nectar.toFixed(1)}
+													{formatAvg(stat.avgBreakdown.nectar)}
 												</div>
 											</div>
 										</div>
@@ -772,7 +824,7 @@
 					<h3 class="text-sm sm:text-xs font-semibold text-slate-600 uppercase tracking-wider">Recent Games</h3>
 					{#if gameHistory.length > 0}
 						<a
-							href="/leagues/{leagueId}/all-games"
+							href="/leagues/{leagueId}/all-games{seasonQs()}"
 							class="inline-flex items-center min-h-[2.75rem] px-2 text-xs text-blue-600 hover:text-blue-700 font-medium touch-manipulation"
 						>
 							View all games →
@@ -900,7 +952,13 @@
 							{/each}
 						</div>
 					{:else}
-						<div class="text-center py-8 text-base sm:text-sm text-slate-500">No games yet</div>
+						<div class="text-center py-8 text-base sm:text-sm text-slate-500">
+							{#if selectedSeason?.status === 'archived'}
+								No games in Season {selectedSeason.number} for this league.
+							{:else}
+								No games this season yet.
+							{/if}
+						</div>
 					{/if}
 				</div>
 			</div>
@@ -908,7 +966,13 @@
 	{:else}
 		<div class="flex-1 flex items-center justify-center">
 			<div class="text-center">
-				<p class="text-base sm:text-sm text-slate-600 mb-4">No games recorded yet.</p>
+				<p class="text-base sm:text-sm text-slate-600 mb-4">
+					{#if selectedSeason?.status === 'archived'}
+						No games in Season {selectedSeason.number} for this league.
+					{:else}
+						No games this season yet.
+					{/if}
+				</p>
 				<Button variant="primary" on:click={handleAddGame}>Add First Game</Button>
 			</div>
 		</div>

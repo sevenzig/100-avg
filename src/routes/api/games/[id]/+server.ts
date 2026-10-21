@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { getDb } from '$lib/utils/db';
 import { getUserId, canManageLeagueGames } from '$lib/utils/auth';
 import { validatePlacementsConsistentWithScores } from '$lib/utils/validation';
+import { PLAY_DATE_BEFORE_EPOCH, seasonForDate } from '$lib/utils/seasons';
 
 interface ScoreInput {
 	userId: number;
@@ -32,9 +33,9 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 
 	// Get game details
 	const game = db
-		.prepare('SELECT id, league_id, played_at, created_by FROM games WHERE id = ?')
+		.prepare('SELECT id, league_id, played_at, created_by, season_id FROM games WHERE id = ?')
 		.get(gameId) as
-		| { id: number; league_id: number; played_at: string; created_by: number }
+		| { id: number; league_id: number; played_at: string; created_by: number; season_id: number | null }
 		| undefined;
 
 	if (!game) {
@@ -95,6 +96,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 			leagueId: game.league_id,
 			playedAt: game.played_at,
 			createdBy: game.created_by,
+			seasonId: game.season_id,
 			scores: scores.map((s) => ({
 				userId: s.user_id,
 				username: s.username,
@@ -149,6 +151,11 @@ export const PUT: RequestHandler = async ({ params, cookies, request }) => {
 			return json({ error: 'Invalid date' }, { status: 400 });
 		}
 
+		const season = seasonForDate(db, playedAt);
+		if (!season) {
+			return json({ error: PLAY_DATE_BEFORE_EPOCH }, { status: 400 });
+		}
+
 		if (!Array.isArray(scores) || scores.length < 1 || scores.length > 5) {
 			return json({ error: 'Game must have between 1 and 5 players' }, { status: 400 });
 		}
@@ -193,7 +200,11 @@ export const PUT: RequestHandler = async ({ params, cookies, request }) => {
 		// Update game and scores in transaction
 		const updateGame = db.transaction(() => {
 			// Update game played_at
-			db.prepare('UPDATE games SET played_at = ? WHERE id = ?').run(playedAt, gameId);
+			db.prepare('UPDATE games SET played_at = ?, season_id = ? WHERE id = ?').run(
+				playedAt,
+				season.id,
+				gameId
+			);
 
 			// Delete existing scores
 			db.prepare('DELETE FROM scores WHERE game_id = ?').run(gameId);
@@ -228,8 +239,14 @@ export const PUT: RequestHandler = async ({ params, cookies, request }) => {
 
 		// Get updated game with scores
 		const updatedGame = db
-			.prepare('SELECT id, league_id, played_at, created_by FROM games WHERE id = ?')
-			.get(gameId) as { id: number; league_id: number; played_at: string; created_by: number };
+			.prepare('SELECT id, league_id, played_at, created_by, season_id FROM games WHERE id = ?')
+			.get(gameId) as {
+			id: number;
+			league_id: number;
+			played_at: string;
+			created_by: number;
+			season_id: number | null;
+		};
 
 		const updatedScores = db
 			.prepare(
@@ -263,6 +280,7 @@ export const PUT: RequestHandler = async ({ params, cookies, request }) => {
 				leagueId: updatedGame.league_id,
 				playedAt: updatedGame.played_at,
 				createdBy: updatedGame.created_by,
+				seasonId: updatedGame.season_id,
 				scores: updatedScores.map((s) => ({
 					userId: s.user_id,
 					username: s.username,

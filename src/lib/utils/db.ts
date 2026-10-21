@@ -4,6 +4,7 @@ import { env } from '$env/dynamic/private';
 import { join } from 'path';
 import { mkdirSync } from 'fs';
 import { generateInviteCode } from '$lib/utils/league-invite';
+import { ensureSeasonSchema } from '$lib/utils/seasons';
 
 // Get database path - use absolute path for better-sqlite3
 const dbDir = join(process.cwd(), 'database');
@@ -209,6 +210,7 @@ export function initDatabase() {
 	}
 
 	ensureLeagueInviteCodes(database);
+	ensureSeasonSchema(database);
 }
 
 function ensureLeagueInviteCodes(database: Database.Database) {
