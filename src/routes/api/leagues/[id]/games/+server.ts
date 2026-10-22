@@ -33,14 +33,16 @@ export const GET: RequestHandler = async ({ params, cookies, url }) => {
 		.prepare('SELECT COUNT(*) as total FROM games WHERE league_id = ? AND season_id = ?')
 		.get(leagueId, season.id) as { total: number };
 
-	// Get game IDs for this page (paginate by games), sequential order of upload (id ASC)
+	// Default is upload order (id ASC) for the all-games list.
+	// order=desc is most recently played first, for the scoreboard's recent games.
+	const orderBy = url.searchParams.get('order') === 'desc' ? 'played_at DESC, id DESC' : 'id ASC';
 	const gameRows = db
 		.prepare(
 			`
 		SELECT id, played_at as playedAt, season_id as seasonId
 		FROM games
 		WHERE league_id = ? AND season_id = ?
-		ORDER BY id ASC
+		ORDER BY ${orderBy}
 		LIMIT ? OFFSET ?
 	`
 		)

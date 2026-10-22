@@ -588,6 +588,7 @@ Get all games for a league (for history/charts).
 - `offset`: number (optional, default: 0)
 - `season`: season number (optional, default: current)
 - `seasonId`: season row id (optional)
+- `order`: `asc` (default) or `desc`
 
 **Response** (200 OK):
 ```json
@@ -619,7 +620,8 @@ Get all games for a league (for history/charts).
 ```
 
 **Notes**:
-- Ordered by `playedAt` descending (most recent first)
+- Default order is upload order (`id` ascending)
+- `order=desc` returns the most recently played games first (`played_at` descending, then `id` descending)
 - Includes pagination metadata
 - Only includes total scores (not full breakdown) for performance
 

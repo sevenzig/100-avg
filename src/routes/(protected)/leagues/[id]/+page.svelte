@@ -89,8 +89,9 @@
 				if (statsData.season) selectedSeason = statsData.season;
 			}
 
-			// Load game history
-			const gamesResponse = await fetch(`/api/leagues/${leagueId}/games${qs}`);
+			// Most recently played games. The all-games page keeps upload order.
+			const gamesQuery = `${qs}${qs ? '&' : '?'}limit=3&order=desc`;
+			const gamesResponse = await fetch(`/api/leagues/${leagueId}/games${gamesQuery}`);
 			if (gamesResponse.ok) {
 				const gamesData = await gamesResponse.json();
 				gameHistory = gamesData.games;
