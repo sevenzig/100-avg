@@ -42,8 +42,18 @@
 	const limit = 10;
 	let currentPage = 1;
 	let totalPages = 1;
-	let expandedGameId: number | null = null;
+	let selectedGameId: number | null = null;
 	let detailedGames: Map<number, GameDetails> = new Map();
+
+	const CATEGORIES = [
+		{ key: 'birds', label: 'Birds', chip: 'bg-blue-50 text-blue-700' },
+		{ key: 'bonusCards', label: 'Bonus', chip: 'bg-green-50 text-green-700' },
+		{ key: 'endOfRoundGoals', label: 'Goals', chip: 'bg-yellow-50 text-yellow-700' },
+		{ key: 'eggs', label: 'Eggs', chip: 'bg-amber-50 text-amber-700' },
+		{ key: 'foodOnCards', label: 'Cache', chip: 'bg-red-50 text-red-700' },
+		{ key: 'tuckedCards', label: 'Tucked', chip: 'bg-purple-50 text-purple-700' },
+		{ key: 'nectar', label: 'Nectar', chip: 'bg-pink-50 text-pink-700' }
+	] as const;
 
 	// Edit/Delete state
 	let editModalOpen = false;
@@ -117,7 +127,7 @@
 		}
 	}
 
-	async function loadPage(pageNum: number) {
+	async function loadPage(pageNum: number, keepId?: number) {
 		if (leagueId <= 0) return;
 		loading = true;
 		error = '';
@@ -136,7 +146,9 @@
 			totalGames = data.total;
 			if (data.season) selectedSeason = data.season;
 			currentPage = pageNum;
-			expandedGameId = null;
+			const nextId = keepId && games.some((g) => g.id === keepId) ? keepId : games[0]?.id;
+			if (nextId) await selectGame(nextId);
+			else selectedGameId = null;
 		} catch (e) {
 			error = 'An error occurred';
 		} finally {
@@ -144,23 +156,42 @@
 		}
 	}
 
-	async function handleToggleGame(gameId: number) {
-		if (expandedGameId === gameId) {
-			expandedGameId = null;
-			return;
-		}
-		expandedGameId = gameId;
-		if (!detailedGames.has(gameId)) {
-			try {
-				const res = await fetch(`/api/games/${gameId}`);
-				if (res.ok) {
-					const data = await res.json();
-					detailedGames.set(gameId, data.game);
-				}
-			} catch (e) {
-				console.error('Failed to load game details', e);
+	async function selectGame(gameId: number) {
+		selectedGameId = gameId;
+		if (detailedGames.has(gameId)) return;
+		try {
+			const res = await fetch(`/api/games/${gameId}`);
+			if (res.ok) {
+				const data = await res.json();
+				detailedGames.set(gameId, data.game);
+				detailedGames = new Map(detailedGames);
 			}
+		} catch (e) {
+			console.error('Failed to load game details', e);
 		}
+	}
+
+	function placeSuffix(n: number) {
+		if (n === 1) return 'st';
+		if (n === 2) return 'nd';
+		if (n === 3) return 'rd';
+		return 'th';
+	}
+
+	function medalClass(placement: number) {
+		if (placement === 1) return 'bg-[#F6E3A1]';
+		if (placement === 2) return 'bg-[#E4E7EC]';
+		if (placement === 3) return 'bg-[#E8C9A8]';
+		return '';
+	}
+
+	function scrollSelected(node: HTMLElement, selected: boolean) {
+		if (selected) node.scrollIntoView({ inline: 'center', block: 'nearest' });
+		return {
+			update(next: boolean) {
+				if (next) node.scrollIntoView({ inline: 'center', block: 'nearest' });
+			}
+		};
 	}
 
 	function getPlayerColor(color: string): string {
@@ -174,9 +205,9 @@
 		return colorMap[color] || '#475569';
 	}
 
-	function formatDate(dateString: string) {
+	function formatListDate(dateString: string) {
 		const date = new Date(dateString);
-		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 	}
 
 	function formatDateTime(dateString: string) {
@@ -266,9 +297,10 @@
 				const data = await res.json();
 				// Update local cache
 				detailedGames.set(gameId, data.game);
+				detailedGames = new Map(detailedGames);
 				editModalOpen = false;
 				editingGame = null;
-				await loadPage(currentPage);
+				await loadPage(currentPage, gameId);
 			} else {
 				const data = await res.json();
 				actionError = data.error || 'Failed to update game';
@@ -318,7 +350,7 @@
 	</div>
 {/if}
 
-<div class="h-screen flex flex-col bg-slate-50">
+<div class="flex h-[calc(100dvh-6rem)] flex-col bg-slate-50 sm:h-[calc(100dvh-8rem)]">
 	{#if actionError}
 		<div class="bg-red-50 border-b border-red-200 px-4 py-2 text-red-800 text-sm flex items-center gap-2">
 			<svg class="w-4 h-4 shrink-0 text-red-500" fill="currentColor" viewBox="0 0 20 20">
@@ -338,9 +370,12 @@
 			<div class="flex items-center gap-3 min-w-0">
 				<a
 					href="/leagues/{leagueId}{selectedSeasonNumber ? `?season=${selectedSeasonNumber}` : ''}"
-					class="text-slate-600 hover:text-slate-900 text-sm font-medium"
+					class="inline-flex items-center gap-1.5 text-slate-600 hover:text-slate-900 text-sm font-medium shrink-0"
 				>
-					← Back to league
+					<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+						<path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+					</svg>
+					Back to league
 				</a>
 				<h1 class="text-lg sm:text-xl font-bold text-slate-900 truncate">{$currentLeague.name} – All Games</h1>
 			</div>
@@ -370,167 +405,169 @@
 						No games this season yet.
 					{/if}
 				</p>
-				<a href="/leagues/{leagueId}" class="text-blue-600 hover:text-blue-700 font-medium">← Back to league</a>
+				<a href="/leagues/{leagueId}" class="text-blue-600 hover:text-blue-700 font-medium">Back to league</a>
 			</div>
 		</div>
 	{:else}
-		<div class="flex-1 overflow-y-auto p-2 sm:p-4">
-			<div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-				<div class="bg-slate-50 border-b border-slate-200 px-2 sm:px-4 py-2">
-					<h2 class="text-sm sm:text-xs font-semibold text-slate-600 uppercase tracking-wider">All Games</h2>
-				</div>
-				<div class="p-2 sm:p-4 space-y-3">
+		{@const details = selectedGameId != null ? detailedGames.get(selectedGameId) : undefined}
+		<div class="flex min-h-0 flex-1 flex-col">
+			<div class="flex gap-2 overflow-x-auto border-b border-slate-200 bg-white px-3 py-2 lg:hidden" aria-label="Games">
+				{#each games as game}
+					{@const top = game.scores.slice().sort((a, b) => b.totalScore - a.totalScore || a.userId - b.userId)[0]}
+					{@const player = $currentLeague?.players?.find((p: { id: number }) => p.id === top?.userId)}
+					{@const playerColor = player ? getPlayerColor(player.color) : '#94A3B8'}
+					{@const on = game.id === selectedGameId}
+					<button
+						type="button"
+						class="flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 {on ? 'border-blue-300 bg-blue-100' : 'border-slate-200 bg-white'}"
+						aria-pressed={on}
+						use:scrollSelected={on}
+						on:click={() => selectGame(game.id)}
+					>
+						<time datetime={game.playedAt} title={formatDateTime(game.playedAt)} class="text-[13px] text-slate-500">{formatListDate(game.playedAt)}</time>
+						<span class="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-900">
+							<span class="h-2 w-2 rounded-full" style="background-color: {playerColor}"></span>
+							{player?.username ?? 'Unknown'}
+						</span>
+						<span class="font-mono text-[15px] font-semibold tabular-nums text-slate-900">{top?.totalScore ?? ''}</span>
+					</button>
+				{/each}
+			</div>
+
+			<div class="grid min-h-0 flex-1 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-3 lg:p-3">
+				<div class="hidden min-h-0 overflow-y-auto rounded-lg border border-slate-200 bg-white lg:block">
 					{#each games as game}
-						{@const sortedScores = game.scores.slice().sort((a, b) => b.totalScore - a.totalScore)}
-						<div
-							role="button"
-							tabindex="0"
-							class="border border-slate-200 rounded-lg p-3 sm:p-4 hover:border-slate-300 hover:shadow-sm cursor-pointer transition"
-							on:click={() => handleToggleGame(game.id)}
-							on:keydown={(e) => {
-								if (e.key === 'Enter' || e.key === ' ') {
-									e.preventDefault();
-									handleToggleGame(game.id);
-								}
-							}}
+						{@const top = game.scores.slice().sort((a, b) => b.totalScore - a.totalScore || a.userId - b.userId)[0]}
+						{@const player = $currentLeague?.players?.find((p: { id: number }) => p.id === top?.userId)}
+						{@const playerColor = player ? getPlayerColor(player.color) : '#94A3B8'}
+						{@const on = game.id === selectedGameId}
+						<button
+							type="button"
+							class="flex w-full items-center gap-2 border-b border-slate-200 px-3 py-2.5 text-left {on ? 'bg-blue-100' : 'hover:bg-slate-50'}"
+							aria-pressed={on}
+							on:click={() => selectGame(game.id)}
 						>
-							<div class="flex items-center justify-between mb-2">
-								<div class="text-sm sm:text-xs text-slate-500 font-medium">
-									{formatDate(game.playedAt)}
-								</div>
-								<div class="flex items-center gap-2">
-									{#if canManageGames}
-										<button
-											class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded hover:bg-blue-50 transition"
-											on:click={(e) => handleEditClick(e, game.id)}
-										>
-											Edit
-										</button>
-										<button
-											class="text-xs text-red-600 hover:text-red-800 font-medium px-2 py-1 rounded hover:bg-red-50 transition"
-											on:click={(e) => handleDeleteClick(e, game.id)}
-										>
-											Delete
-										</button>
-									{/if}
-									<div class="text-sm sm:text-xs text-slate-400">
-										Game #{game.id}
-									</div>
-								</div>
-							</div>
-
-							<div class="space-y-1.5">
-								{#each sortedScores as score, idx}
-									{@const player = $currentLeague?.players?.find((p: { id: number }) => p.id === score.userId)}
-									{@const playerColor = player ? getPlayerColor(player.color) : '#94A3B8'}
-									<div class="flex items-center justify-between text-base sm:text-sm">
-										<div class="flex items-center gap-2">
-											<span class="text-slate-400 font-mono text-sm sm:text-xs w-5 sm:w-4">{idx + 1}.</span>
-											<div
-												class="w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full shrink-0"
-												style="background-color: {playerColor};"
-											></div>
-											<span class="font-medium text-slate-900 truncate" style="color: {playerColor};">
-												{player?.username ?? 'Unknown'}
-											</span>
-										</div>
-										<span class="font-mono font-semibold text-slate-900 tabular-nums">
-											{score.totalScore}
-										</span>
-									</div>
-								{/each}
-							</div>
-
-							{#if expandedGameId === game.id && detailedGames.has(game.id)}
-								{@const gameDetails = detailedGames.get(game.id)!}
-								<div class="mt-3 pt-3 border-t border-slate-200">
-									<div class="text-xs text-slate-500 mb-3 font-medium">
-										{formatDateTime(gameDetails.playedAt)}
-									</div>
-									<div class="space-y-2">
-										{#each gameDetails.scores.slice().sort((a, b) => a.placement - b.placement) as scoreDetail}
-											{@const player = $currentLeague?.players?.find((p: { id: number }) => p.id === scoreDetail.userId)}
-											{@const playerColor = player ? getPlayerColor(player.color) : '#94A3B8'}
-											{@const suffix = scoreDetail.placement === 1 ? 'st' : scoreDetail.placement === 2 ? 'nd' : scoreDetail.placement === 3 ? 'rd' : 'th'}
-											<div class="border-b border-slate-100 pb-2 last:border-0 last:pb-0">
-												<div class="flex items-center justify-between mb-1.5">
-													<div class="flex items-center gap-2">
-														<div
-															class="w-2 h-2 rounded-full shrink-0"
-															style="background-color: {playerColor};"
-														></div>
-														<span class="font-semibold text-sm" style="color: {playerColor};">
-															{scoreDetail.username}
-														</span>
-														<span class="text-xs text-slate-500">
-															({scoreDetail.placement}{suffix})
-														</span>
-													</div>
-													<span class="font-mono font-bold text-slate-900">
-														{scoreDetail.totalScore} pts
-													</span>
-												</div>
-												<div class="grid grid-cols-7 gap-1 text-[10px] mt-1.5">
-													<div class="text-center">
-														<div class="text-slate-500 text-[9px]">Birds</div>
-														<div class="font-mono font-semibold text-blue-700">{scoreDetail.breakdown.birds}</div>
-													</div>
-													<div class="text-center">
-														<div class="text-slate-500 text-[9px]">Bonus</div>
-														<div class="font-mono font-semibold text-green-700">{scoreDetail.breakdown.bonusCards}</div>
-													</div>
-													<div class="text-center">
-														<div class="text-slate-500 text-[9px]">Goals</div>
-														<div class="font-mono font-semibold text-yellow-700">{scoreDetail.breakdown.endOfRoundGoals}</div>
-													</div>
-													<div class="text-center">
-														<div class="text-slate-500 text-[9px]">Eggs</div>
-														<div class="font-mono font-semibold text-amber-700">{scoreDetail.breakdown.eggs}</div>
-													</div>
-													<div class="text-center">
-														<div class="text-slate-500 text-[9px]">Cache</div>
-														<div class="font-mono font-semibold text-red-700">{scoreDetail.breakdown.foodOnCards}</div>
-													</div>
-													<div class="text-center">
-														<div class="text-slate-500 text-[9px]">Tucked</div>
-														<div class="font-mono font-semibold text-purple-700">{scoreDetail.breakdown.tuckedCards}</div>
-													</div>
-													<div class="text-center">
-														<div class="text-slate-500 text-[9px]">Nectar</div>
-														<div class="font-mono font-semibold text-pink-700">{scoreDetail.breakdown.nectar}</div>
-													</div>
-												</div>
-											</div>
-										{/each}
-									</div>
-								</div>
-							{/if}
-						</div>
+							<time datetime={game.playedAt} title={formatDateTime(game.playedAt)} class="w-16 shrink-0 text-sm text-slate-500">{formatListDate(game.playedAt)}</time>
+							<span class="inline-flex min-w-0 flex-1 items-center gap-2 font-semibold text-slate-900">
+								<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {playerColor}"></span>
+								<span class="truncate">{player?.username ?? 'Unknown'}</span>
+							</span>
+							<span class="font-mono text-base font-semibold tabular-nums text-slate-900">{top?.totalScore ?? ''}</span>
+						</button>
 					{/each}
 				</div>
 
-				<div class="border-t border-slate-200 px-2 sm:px-4 py-3 flex items-center justify-between">
-					<span class="text-sm text-slate-600">
-						Page {currentPage} of {totalPages}
-					</span>
-					<div class="flex gap-2">
-						<button
-							class="px-3 py-1.5 text-sm font-medium rounded border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-							disabled={currentPage <= 1}
-							on:click={() => loadPage(currentPage - 1)}
-						>
-							Previous
-						</button>
-						<button
-							class="px-3 py-1.5 text-sm font-medium rounded border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-							disabled={currentPage >= totalPages}
-							on:click={() => loadPage(currentPage + 1)}
-						>
-							Next
-						</button>
-					</div>
+				<section class="min-h-0 overflow-y-auto bg-white lg:rounded-lg lg:border lg:border-slate-200" aria-live="polite">
+					{#if details}
+						<div class="flex items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
+							<h2 class="text-base font-bold text-slate-900" title={formatDateTime(details.playedAt)}>
+								{formatListDate(details.playedAt)}
+								<span class="ml-1.5 text-xs font-medium text-slate-500">Game #{details.id}</span>
+							</h2>
+							{#if canManageGames}
+								<div class="flex items-center">
+									<button type="button" class="min-h-11 rounded px-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50" on:click={(e) => handleEditClick(e, details.id)}>Edit</button>
+									<button type="button" class="min-h-11 rounded px-2.5 text-sm font-semibold text-red-600 hover:bg-red-50" on:click={(e) => handleDeleteClick(e, details.id)}>Delete</button>
+								</div>
+							{/if}
+						</div>
+
+						<div class="hidden overflow-x-auto lg:block">
+							<table class="w-full table-fixed border-collapse text-sm">
+								<colgroup>
+									<col style="width: 152px" />
+									<col style="width: 64px" />
+									{#each CATEGORIES as cat}
+										<col data-cat={cat.key} />
+									{/each}
+								</colgroup>
+								<thead>
+									<tr class="border-b border-slate-200">
+										<th scope="col" class="px-2 py-2 text-left align-bottom text-xs font-semibold text-slate-600">Player</th>
+										<th scope="col" class="px-1 py-2 text-center align-bottom text-xs font-semibold text-slate-600">Total</th>
+										{#each CATEGORIES as cat}
+											<th scope="col" class="h-[76px] px-0 py-1 text-center align-bottom text-xs font-semibold text-slate-600" title={cat.label}>
+												<span class="inline-block [writing-mode:vertical-rl] rotate-180">{cat.label}</span>
+											</th>
+										{/each}
+									</tr>
+								</thead>
+								<tbody>
+									{#each details.scores.slice().sort((a, b) => a.placement - b.placement) as scoreDetail}
+										{@const player = $currentLeague?.players?.find((p: { id: number }) => p.id === scoreDetail.userId)}
+										{@const playerColor = player ? getPlayerColor(player.color) : '#94A3B8'}
+										<tr class="border-b border-slate-200">
+											<th scope="row" class="px-2 py-2 text-left font-normal {medalClass(scoreDetail.placement)}">
+												<span class="inline-flex items-center gap-2">
+													<span class="w-7 font-mono text-xs font-medium text-slate-500">{scoreDetail.placement}{placeSuffix(scoreDetail.placement)}</span>
+													<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {playerColor}"></span>
+													<span class="font-semibold text-slate-900">{scoreDetail.username}</span>
+												</span>
+											</th>
+											<td class="text-center font-mono text-[15px] font-semibold tabular-nums text-slate-900">{scoreDetail.totalScore}</td>
+											{#each CATEGORIES as cat}
+												<td class="px-0.5 py-2 text-center">
+													<span class="inline-flex min-w-7 items-center justify-center rounded px-1 py-0.5 font-mono text-[13px] font-semibold tabular-nums {cat.chip}">{scoreDetail.breakdown[cat.key]}</span>
+												</td>
+											{/each}
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+
+						<div class="lg:hidden">
+							{#each details.scores.slice().sort((a, b) => a.placement - b.placement) as scoreDetail}
+								{@const player = $currentLeague?.players?.find((p: { id: number }) => p.id === scoreDetail.userId)}
+								{@const playerColor = player ? getPlayerColor(player.color) : '#94A3B8'}
+								<article class="border-b border-slate-200 bg-white px-3 py-2">
+									<header class="flex items-center justify-between gap-2 rounded-md px-2 py-1 {medalClass(scoreDetail.placement)}">
+										<span class="inline-flex items-center gap-2 font-semibold text-slate-900">
+											<span class="w-7 font-mono text-xs font-medium text-slate-500">{scoreDetail.placement}{placeSuffix(scoreDetail.placement)}</span>
+											<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {playerColor}"></span>
+											{scoreDetail.username}
+										</span>
+										<span class="font-mono text-base font-semibold tabular-nums text-slate-900">{scoreDetail.totalScore}</span>
+									</header>
+									<div class="mt-1 grid grid-cols-7 gap-1">
+										{#each CATEGORIES as cat}
+											<div class="flex flex-col items-center rounded px-0.5 py-0.5 {cat.chip}" title={cat.label}>
+												<span class="text-[9px] font-semibold leading-tight">{cat.label}</span>
+												<span class="font-mono text-[12px] font-semibold tabular-nums leading-tight">{scoreDetail.breakdown[cat.key]}</span>
+											</div>
+										{/each}
+									</div>
+								</article>
+							{/each}
+						</div>
+					{:else}
+						<div class="flex h-full items-center justify-center p-6 text-sm text-slate-500">Loading game…</div>
+					{/if}
+				</section>
+			</div>
+
+			<div class="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-3 py-2 sm:px-4">
+				<span class="text-sm text-slate-600">Page {currentPage} of {totalPages}</span>
+				<div class="flex gap-2">
+					<button
+						type="button"
+						class="min-h-11 rounded border border-slate-300 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+						disabled={currentPage <= 1}
+						on:click={() => loadPage(currentPage - 1)}
+					>
+						Previous
+					</button>
+					<button
+						type="button"
+						class="min-h-11 rounded border border-slate-300 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+						disabled={currentPage >= totalPages}
+						on:click={() => loadPage(currentPage + 1)}
+					>
+						Next
+					</button>
 				</div>
 			</div>
 		</div>
 	{/if}
 </div>
+
