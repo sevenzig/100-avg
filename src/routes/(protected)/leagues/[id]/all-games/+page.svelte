@@ -38,10 +38,6 @@
 	let loading = true;
 	let error = '';
 	let games: GameSummary[] = [];
-	let totalGames = 0;
-	const limit = 10;
-	let currentPage = 1;
-	let totalPages = 1;
 	let selectedGameId: number | null = null;
 	let detailedGames: Map<number, GameDetails> = new Map();
 
@@ -73,13 +69,12 @@
 		const m = $page.url.pathname.match(/^\/leagues\/(\d+)/);
 		return m ? parseInt(m[1], 10) : 0;
 	})();
-	$: totalPages = Math.max(1, Math.ceil(totalGames / limit));
 
 	onMount(async () => {
 		if (leagueId > 0) {
 			await loadSeasons();
 			await loadLeague();
-			await loadPage(1);
+			await loadGames();
 		} else {
 			loading = false;
 			error = 'Invalid league';
@@ -112,7 +107,7 @@
 			keepFocus: true,
 			noScroll: true
 		});
-		await loadPage(1);
+		await loadGames();
 	}
 
 	async function loadLeague() {
@@ -127,25 +122,33 @@
 		}
 	}
 
-	async function loadPage(pageNum: number, keepId?: number) {
+	async function loadGames(keepId?: number) {
 		if (leagueId <= 0) return;
 		loading = true;
 		error = '';
-		const offset = (pageNum - 1) * limit;
+		const season = seasonQs();
+		const pageSize = 100;
+		const collected: GameSummary[] = [];
 		try {
-			const season = seasonQs();
-			const res = await fetch(
-				`/api/leagues/${leagueId}/games?limit=${limit}&offset=${offset}${season ? `&${season}` : ''}`
-			);
-			if (!res.ok) {
-				error = 'Failed to load games';
-				return;
-			}
-			const data = await res.json();
-			games = data.games;
-			totalGames = data.total;
-			if (data.season) selectedSeason = data.season;
-			currentPage = pageNum;
+			let offset = 0;
+			let total = 0;
+			do {
+				const res = await fetch(
+					`/api/leagues/${leagueId}/games?limit=${pageSize}&offset=${offset}${season ? `&${season}` : ''}`
+				);
+				if (!res.ok) {
+					error = 'Failed to load games';
+					return;
+				}
+				const data = await res.json();
+				const batch = data.games as GameSummary[];
+				collected.push(...batch);
+				total = data.total;
+				if (data.season) selectedSeason = data.season;
+				if (batch.length === 0) break;
+				offset += batch.length;
+			} while (collected.length < total);
+			games = collected;
 			const nextId = keepId && games.some((g) => g.id === keepId) ? keepId : games[0]?.id;
 			if (nextId) await selectGame(nextId);
 			else selectedGameId = null;
@@ -269,7 +272,7 @@
 				// Remove from local state and refresh
 				detailedGames.delete(deleteConfirmGameId);
 				deleteConfirmGameId = null;
-				await loadPage(currentPage);
+				await loadGames();
 			} else {
 				const data = await res.json();
 				actionError = data.error || 'Failed to delete game';
@@ -300,7 +303,7 @@
 				detailedGames = new Map(detailedGames);
 				editModalOpen = false;
 				editingGame = null;
-				await loadPage(currentPage, gameId);
+				await loadGames(gameId);
 			} else {
 				const data = await res.json();
 				actionError = data.error || 'Failed to update game';
@@ -445,6 +448,7 @@
 							type="button"
 							class="flex w-full items-center gap-2 border-b border-slate-200 px-3 py-2.5 text-left {on ? 'bg-blue-100' : 'hover:bg-slate-50'}"
 							aria-pressed={on}
+							use:scrollSelected={on}
 							on:click={() => selectGame(game.id)}
 						>
 							<time datetime={game.playedAt} title={formatDateTime(game.playedAt)} class="w-16 shrink-0 text-sm text-slate-500">{formatListDate(game.playedAt)}</time>
@@ -475,7 +479,7 @@
 						<div class="hidden overflow-x-auto lg:block">
 							<table class="w-full table-fixed border-collapse text-sm">
 								<colgroup>
-									<col style="width: 152px" />
+									<col style="width: 240px" />
 									<col style="width: 64px" />
 									{#each CATEGORIES as cat}
 										<col data-cat={cat.key} />
@@ -497,11 +501,11 @@
 										{@const player = $currentLeague?.players?.find((p: { id: number }) => p.id === scoreDetail.userId)}
 										{@const playerColor = player ? getPlayerColor(player.color) : '#94A3B8'}
 										<tr class="border-b border-slate-200">
-											<th scope="row" class="px-2 py-2 text-left font-normal {medalClass(scoreDetail.placement)}">
-												<span class="inline-flex items-center gap-2">
-													<span class="w-7 font-mono text-xs font-medium text-slate-500">{scoreDetail.placement}{placeSuffix(scoreDetail.placement)}</span>
+											<th scope="row" class="overflow-hidden px-2 py-2 text-left font-normal {medalClass(scoreDetail.placement)}">
+												<span class="inline-flex max-w-full items-center gap-2">
+													<span class="w-7 shrink-0 font-mono text-xs font-medium text-slate-500">{scoreDetail.placement}{placeSuffix(scoreDetail.placement)}</span>
 													<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {playerColor}"></span>
-													<span class="font-semibold text-slate-900">{scoreDetail.username}</span>
+													<span class="truncate font-semibold text-slate-900">{scoreDetail.username}</span>
 												</span>
 											</th>
 											<td class="text-center font-mono text-[15px] font-semibold tabular-nums text-slate-900">{scoreDetail.totalScore}</td>
@@ -546,27 +550,6 @@
 				</section>
 			</div>
 
-			<div class="flex items-center justify-between gap-3 border-t border-slate-200 bg-white px-3 py-2 sm:px-4">
-				<span class="text-sm text-slate-600">Page {currentPage} of {totalPages}</span>
-				<div class="flex gap-2">
-					<button
-						type="button"
-						class="min-h-11 rounded border border-slate-300 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-						disabled={currentPage <= 1}
-						on:click={() => loadPage(currentPage - 1)}
-					>
-						Previous
-					</button>
-					<button
-						type="button"
-						class="min-h-11 rounded border border-slate-300 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-						disabled={currentPage >= totalPages}
-						on:click={() => loadPage(currentPage + 1)}
-					>
-						Next
-					</button>
-				</div>
-			</div>
 		</div>
 	{/if}
 </div>

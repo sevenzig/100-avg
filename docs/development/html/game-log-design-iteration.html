@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+	<title>All games — option E</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&family=Source+Serif+4:wght@500;600;700&display=swap" rel="stylesheet" />
+	<style>
+		/*
+		  Tokens from design-system/MASTER.md and tailwind.config.js.
+		  The app ships Inter + JetBrains Mono. The generated file
+		  design-system/wingspan-score-tracker/MASTER.md (Fira) is not used here.
+		*/
+		:root {
+			--bg: #F8FAFC;
+			--card: #FFFFFF;
+			--panel: #F1F5F9;
+			--border: #E2E8F0;
+			--text: #0F172A;
+			--muted: #475569;
+			--faint: #94A3B8;
+			--label: #64748B;
+			--blue: #3B82F6;
+			--blue-soft: #EFF6FF;
+			--zebra: #FAFBFC;
+			--hover: #F8FAFC;
+			--shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+			--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+			--sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			--mono: "JetBrains Mono", ui-monospace, monospace;
+			--nav-h: 64px;
+			--head-h: 68px;
+			--pager-h: 52px;
+		}
+
+		* { box-sizing: border-box; }
+		html, body { height: 100%; }
+		body {
+			margin: 0;
+			background: var(--bg);
+			color: var(--text);
+			font-family: var(--sans);
+			font-size: 15px;
+			line-height: 1.4;
+		}
+		button, select { font: inherit; color: inherit; }
+		button { cursor: pointer; }
+		:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+		::selection { background: #BFDBFE; color: var(--text); }
+		@media (prefers-reduced-motion: reduce) {
+			*, *::before, *::after {
+				transition: none !important;
+				scroll-behavior: auto !important;
+			}
+		}
+
+		.sr-only {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			padding: 0;
+			margin: -1px;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
+
+		.studio {
+			height: 100dvh;
+			display: grid;
+			grid-template-columns: 300px minmax(0, 1fr);
+			overflow: hidden;
+		}
+		.rail {
+			min-height: 0;
+			overflow: auto;
+			padding: 16px 14px 16px 16px;
+			border-right: 1px solid var(--border);
+			background: var(--bg);
+		}
+		.rail h1 {
+			margin: 0 0 6px;
+			font-size: 20px;
+			line-height: 1.2;
+			font-weight: 700;
+		}
+		.lead {
+			margin: 0 0 12px;
+			color: var(--muted);
+			font-size: 13px;
+		}
+		.layouts { display: flex; flex-direction: column; gap: 4px; }
+		.layouts button {
+			display: grid;
+			grid-template-columns: 20px 1fr;
+			gap: 2px 8px;
+			text-align: left;
+			padding: 4px 8px;
+			border: 1px solid transparent;
+			border-radius: 8px;
+			background: transparent;
+			color: var(--text);
+		}
+		.layouts button:hover { background: var(--card); border-color: var(--border); }
+		.layouts button[aria-current="true"] {
+			background: var(--card);
+			border-color: var(--border);
+			box-shadow: inset 3px 0 0 var(--blue), var(--shadow);
+		}
+		.layouts .n {
+			grid-row: span 2;
+			align-self: center;
+			font-family: var(--mono);
+			font-size: 12px;
+			color: var(--faint);
+		}
+		.layouts .name { font-size: 14px; font-weight: 600; }
+		.layouts .meta { font-size: 12px; color: var(--muted); }
+		.notes {
+			margin-top: 12px;
+			padding-top: 10px;
+			border-top: 1px solid var(--border);
+			font-size: 12px;
+			color: var(--muted);
+		}
+		.notes p { margin: 0 0 6px; line-height: 1.35; }
+		.notes strong { color: var(--text); font-weight: 600; }
+
+		.canvas {
+			min-width: 0;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+			padding: 12px 16px 16px;
+			background: var(--panel);
+		}
+		.frame-label {
+			margin: 0 0 8px;
+			font-size: 12px;
+			color: var(--muted);
+		}
+		.frame {
+			flex: 1;
+			min-height: 0;
+			min-width: 0;
+			background: var(--bg);
+			border: 1px solid var(--border);
+			border-radius: 10px;
+			box-shadow: var(--shadow-md);
+			overflow: hidden;
+		}
+		.mount { height: 100%; }
+
+		/* App shell. Nav matches (protected)/+layout.svelte.
+		   Page fills the rest: flex-1 min-h-0, overflow hidden.
+		   h-screen on the page, under this nav, is what scrolls today. */
+		.app {
+			height: 100%;
+			display: flex;
+			flex-direction: column;
+			overflow: hidden;
+			background: var(--bg);
+		}
+		.nav {
+			height: var(--nav-h);
+			flex: none;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0 24px;
+			background: var(--card);
+			border-bottom: 1px solid var(--border);
+			box-shadow: var(--shadow);
+		}
+		.brand {
+			font-size: 18px;
+			font-weight: 700;
+			text-decoration: none;
+			color: var(--text);
+		}
+		.brand:hover { color: var(--blue); }
+		.account {
+			min-height: 44px;
+			padding: 0 12px;
+			border: 0;
+			border-radius: 8px;
+			background: transparent;
+		}
+		.account:hover { background: var(--panel); }
+		.page-head {
+			flex: none;
+			min-height: var(--head-h);
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			padding: 12px 24px;
+			background: var(--card);
+			border-bottom: 1px solid var(--border);
+		}
+		.page-title {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			min-width: 0;
+		}
+		.back {
+			flex: none;
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			color: var(--muted);
+			font-size: 14px;
+			font-weight: 500;
+			text-decoration: none;
+		}
+		.back svg { display: block; }
+		.back:hover { color: var(--text); }
+		.page-title h2 {
+			margin: 0;
+			font-size: 20px;
+			font-weight: 700;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.season {
+			height: 44px;
+			max-width: 18rem;
+			padding: 0 12px;
+			border: 1px solid #CBD5E1;
+			border-radius: 8px;
+			background: var(--card);
+			font-size: 14px;
+		}
+		.stage {
+			flex: 1;
+			min-height: 0;
+			overflow: hidden;
+			padding: 12px 16px;
+			display: flex;
+			flex-direction: column;
+		}
+		.panel {
+			flex: 1;
+			min-height: 0;
+			background: var(--card);
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			box-shadow: var(--shadow);
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+		}
+		.panel:has(.board) { overflow: auto; }
+		.pager {
+			min-height: var(--pager-h);
+			flex: none;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			padding: 8px 16px;
+			background: var(--card);
+			border-top: 1px solid var(--border);
+			font-size: 14px;
+			color: var(--muted);
+		}
+		.pager-actions, .pager-pages { display: flex; align-items: center; gap: 8px; }
+		.pager-game { color: var(--text); font-weight: 600; font-size: 13px; }
+		.link {
+			min-height: 36px;
+			border: 0;
+			background: transparent;
+			border-radius: 6px;
+			padding: 6px 10px;
+			font-size: 14px;
+			font-weight: 600;
+		}
+		.link.edit { color: #2563EB; }
+		.link.edit:hover { background: #EFF6FF; }
+		.link.del { color: #DC2626; }
+		.link.del:hover { background: #FEF2F2; }
+		.pager-btn {
+			min-height: 36px;
+			padding: 6px 12px;
+			border: 1px solid #CBD5E1;
+			border-radius: 6px;
+			background: var(--card);
+			color: var(--text);
+			font-size: 14px;
+			font-weight: 500;
+		}
+		.pager-btn:hover:not(:disabled) { background: var(--hover); }
+		.pager-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+		.dot {
+			width: 8px;
+			height: 8px;
+			border-radius: 999px;
+			flex: none;
+			background: var(--c);
+		}
+		.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+		.gid { color: var(--label); font-size: 12px; font-family: var(--mono); }
+		/* 100 or more. The underline stays the win mark. */
+		.is-hit {
+			font-weight: 700;
+			background: #D1FAE5;
+			border-radius: 4px;
+			padding: 0 4px;
+		}
+
+		/* 1. Player columns — Table.svelte */
+		.matrix { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+		.mhead, .mrow {
+			display: grid;
+			grid-template-columns: 88px 48px repeat(var(--n, 4), minmax(0, 1fr));
+			align-items: center;
+			column-gap: 8px;
+			padding: 0 12px;
+		}
+		.mhead {
+			flex: none;
+			height: 36px;
+			background: var(--panel);
+			border-bottom: 2px solid var(--border);
+			font-size: 11px;
+			font-weight: 600;
+			letter-spacing: 0.04em;
+			text-transform: uppercase;
+			color: var(--muted);
+		}
+		.mhead .ph {
+			justify-self: end;
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			text-transform: none;
+			letter-spacing: 0;
+			font-size: 13px;
+			font-weight: 600;
+			color: var(--text);
+		}
+		.mbody {
+			flex: 1;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+		}
+		.mrow {
+			flex: 1 1 0;
+			max-height: 40px;
+			min-height: 0;
+			width: 100%;
+			border: 0;
+			border-bottom: 1px solid var(--border);
+			background: var(--card);
+			text-align: left;
+			font-size: 13px;
+			overflow: hidden;
+		}
+		.mrow:nth-child(even) { background: var(--zebra); }
+		.mrow:hover { background: var(--hover); }
+		.mrow.is-selected { background: #DBEAFE; }
+		.mrow time { color: var(--muted); }
+		.score {
+			justify-self: end;
+			font-family: var(--mono);
+			font-variant-numeric: tabular-nums;
+			font-weight: 500;
+			padding-bottom: 2px;
+			border-bottom: 2px solid transparent;
+		}
+		.score.is-win { font-weight: 600; border-bottom-color: var(--c); }
+
+		/* 2. Finish order — one operational line */
+		.strips { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+		.sline {
+			flex: 1 1 0;
+			max-height: 36px;
+			min-height: 0;
+			display: grid;
+			grid-template-columns: 72px 48px minmax(0, 1fr);
+			align-items: center;
+			gap: 8px;
+			padding: 0 12px;
+			border: 0;
+			border-bottom: 1px solid var(--border);
+			background: var(--card);
+			text-align: left;
+			overflow: hidden;
+		}
+		.sline:nth-child(even) { background: var(--zebra); }
+		.sline:hover { background: var(--hover); }
+		.sline.is-selected { background: #DBEAFE; }
+		.sline time { font-size: 13px; color: var(--muted); }
+		.chips, .run { display: flex; justify-content: flex-start; align-items: center; gap: 16px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+		.chips::-webkit-scrollbar, .run::-webkit-scrollbar { display: none; }
+		.chip {
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			white-space: nowrap;
+			font-size: 13px;
+		}
+		.chip .place { width: 1.2ch; color: var(--label); font-family: var(--mono); font-size: 12px; }
+		.chip .who { font-weight: 500; color: var(--text); }
+		.chip.is-win .who { font-weight: 700; }
+		.chip .pts, .block-pts.is-win { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+		.chip .pts.is-win, .block-pts.is-win { border-bottom: 2px solid var(--c); padding-bottom: 1px; }
+
+		/* 3. List + breakdown */
+		.split {
+			flex: 1;
+			min-height: 0;
+			display: grid;
+			grid-template-columns: minmax(0, 1.35fr) minmax(268px, 0.75fr);
+			gap: 12px;
+		}
+		.listrows { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+		.lrow {
+			flex: 1 1 0;
+			max-height: 40px;
+			min-height: 0;
+			display: grid;
+			grid-template-columns: 58px 36px minmax(0, 1fr);
+			align-items: center;
+			gap: 8px;
+			padding: 0 12px;
+			border: 0;
+			border-bottom: 1px solid var(--border);
+			background: transparent;
+			text-align: left;
+			overflow: hidden;
+		}
+		.lrow:hover { background: var(--hover); }
+		.lrow.is-selected { background: #DBEAFE; }
+		.lrow time { font-size: 13px; color: var(--muted); }
+		.lrow .run { gap: 8px; }
+		.lrow .chip { gap: 4px; }
+		.detail { min-height: 0; }
+		.detail-head {
+			flex: none;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			padding: 8px 12px;
+			border-bottom: 1px solid var(--border);
+			background: var(--panel);
+		}
+		.detail-head h3 { margin: 0; font-size: 14px; font-weight: 600; }
+		.detail-head p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+		.blocks {
+			flex: 1;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+		}
+		.block {
+			flex: 1 1 0;
+			min-height: 0;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			gap: 4px;
+			padding: 6px 12px;
+			border-bottom: 1px solid #F1F5F9;
+		}
+		.block-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+		.block-who { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: var(--text); }
+		.block-place { color: var(--muted); font-weight: 500; font-size: 12px; }
+		.block-pts { font-family: var(--mono); font-weight: 700; font-variant-numeric: tabular-nums; }
+		.cats {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 2px 8px;
+			text-align: left;
+		}
+		.cats span {
+			display: block;
+			font-size: 11px;
+			color: var(--label);
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+		.cats b {
+			font-family: var(--mono);
+			font-size: 13px;
+			font-weight: 600;
+			font-variant-numeric: tabular-nums;
+		}
+
+		/* 4. Score cards — Card.svelte with padding p-2 */
+		.cardstage {
+			flex: 1;
+			min-height: 0;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+		.legend {
+			flex: none;
+			display: flex;
+			gap: 16px;
+			align-items: center;
+			font-size: 13px;
+			font-weight: 600;
+		}
+		.legend span { display: inline-flex; align-items: center; gap: 6px; }
+		.cards {
+			flex: 1;
+			min-height: 0;
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			grid-template-rows: repeat(8, minmax(0, 1fr));
+			gap: 8px;
+		}
+		.gcard {
+			min-height: 0;
+			max-height: 84px;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			gap: 4px;
+			padding: 8px 12px;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			background: var(--card);
+			box-shadow: var(--shadow);
+			text-align: left;
+			overflow: hidden;
+			transition: box-shadow 150ms ease, border-color 150ms ease;
+		}
+		.gcard:hover { box-shadow: var(--shadow-md); border-color: #CBD5E1; }
+		.gcard.is-selected { border-color: var(--blue); background: #EFF6FF; box-shadow: var(--shadow); }
+		.gcard-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+		.quad {
+			display: grid;
+			grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr));
+			gap: 6px;
+		}
+		.qcell { display: inline-flex; align-items: center; gap: 4px; min-width: 0; }
+		.quad b {
+			font-family: var(--mono);
+			font-size: 15px;
+			font-weight: 500;
+			font-variant-numeric: tabular-nums;
+			border-bottom: 2px solid transparent;
+			justify-self: start;
+		}
+		.quad b.is-win { font-weight: 700; border-bottom-color: var(--c); }
+
+		/* 5. Season board — games across, Modal for the breakdown */
+		.board {
+			flex: none;
+			min-height: 0;
+			display: grid;
+			grid-template-columns: 116px repeat(var(--games, 16), minmax(0, 1fr));
+			grid-template-rows: 40px repeat(var(--n, 4), 64px);
+		}
+		.corner, .bdate, .plabel, .cell {
+			border-right: 1px solid var(--border);
+			border-bottom: 1px solid var(--border);
+			min-width: 0;
+			min-height: 0;
+		}
+		.corner { background: var(--panel); }
+		.bdate {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			background: var(--panel);
+			font-size: 12px;
+			line-height: 1.15;
+			color: var(--muted);
+			font-weight: 600;
+		}
+		.bdate .bmon { height: 1em; }
+		.bdate.is-selected, .cell.is-selected { background: #DBEAFE; }
+		.plabel {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			padding: 0 10px;
+			font-size: 14px;
+			font-weight: 600;
+			background: var(--card);
+		}
+		.cell {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-left: 0;
+			border-top: 0;
+			background: var(--card);
+			padding: 0;
+		}
+		.cell:hover { background: var(--hover); }
+		.cell b {
+			font-family: var(--mono);
+			font-size: clamp(13px, 1.6vw, 20px);
+			font-weight: 500;
+			font-variant-numeric: tabular-nums;
+			border-bottom: 2px solid transparent;
+		}
+		.cell.is-win { background: color-mix(in srgb, var(--c) 14%, white); }
+		.cell.is-win b { font-weight: 700; border-bottom-color: var(--c); }
+		.cell b.is-hit { padding: 0 2px; }
+		.cell.is-win.is-selected { background: color-mix(in srgb, var(--c) 18%, #DBEAFE); }
+
+		/* Option 3 iterations. A score book, outside the app tokens. */
+		.rail-label {
+			margin: 14px 8px 4px;
+			font-size: 12px;
+			font-weight: 600;
+			color: var(--muted);
+		}
+		.book {
+			--bg: #F3EFE6;
+			--card: #FBF8F3;
+			--panel: #E7E1D6;
+			--border: #DDD4C6;
+			--text: #1C1714;
+			--muted: #5C5348;
+			--label: #5C5348;
+			--blue: #1E3A8A;
+			--hover: #EFEAE2;
+			--shadow: none;
+			--sans: "Source Serif 4", Georgia, "Times New Roman", serif;
+			--mono: "IBM Plex Mono", ui-monospace, monospace;
+			background: var(--bg);
+			color: var(--text);
+			font-family: var(--sans);
+			scrollbar-color: #C8BBA8 transparent;
+		}
+		.book ::selection { background: #E4D3B0; color: var(--text); }
+		.book .nav, .book .page-head, .book .pager, .book .panel { background: var(--card); }
+		.book .panel { box-shadow: none; }
+		.book .brand, .book .page-title h2, .book .detail-head h3 { font-family: var(--sans); }
+		.book .detail-head { background: transparent; }
+		.book .detail-head h3 { font-size: 22px; font-weight: 600; }
+		.book .page-title h2 { font-weight: 600; }
+		.book .season, .book .pager-btn { border-color: var(--border); background: var(--card); }
+		.book .link.edit { color: #1E3A8A; }
+		.book .link.del { color: #9F1239; }
+		.book .is-hit { background: #DCE8D6; color: #14301F; }
+		.book .split { grid-template-columns: 232px minmax(0, 1fr); gap: 16px; }
+		.book .listrows { overflow: auto; }
+		.brow {
+			flex: none;
+			min-height: 48px;
+			display: grid;
+			grid-template-columns: 72px minmax(0, 1fr) auto;
+			align-items: center;
+			gap: 8px;
+			width: 100%;
+			padding: 0 12px;
+			border: 0;
+			border-bottom: 1px solid var(--border);
+			background: transparent;
+			text-align: left;
+			font-size: 16px;
+		}
+		.brow time { color: var(--muted); font-size: 15px; }
+		.bwho { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; }
+		.bpts, .fig {
+			font-family: var(--mono);
+			font-variant-numeric: tabular-nums;
+			font-weight: 500;
+			font-size: 18px;
+		}
+		.fig {
+			font-size: 16px;
+			font-weight: 500;
+			border-bottom: 2px solid transparent;
+			padding-bottom: 1px;
+		}
+		.bpts { border-bottom: 2px solid transparent; padding-bottom: 1px; }
+		.bpts.is-win, .fig.is-win { font-weight: 600; border-bottom-color: var(--c); }
+		.brow:hover { background: var(--hover); }
+		.brow.is-selected { background: #E4EAF4; }
+		.sheet-wrap, .ledger, .pairgrid, .bars, .table-wrap {
+			flex: 1;
+			min-height: 0;
+			overflow: auto;
+			padding: 8px 16px 16px;
+		}
+		.sheet, .gridtable {
+			width: 100%;
+			border-collapse: collapse;
+			table-layout: fixed;
+		}
+		.sheet th, .sheet td, .gridtable th, .gridtable td {
+			padding: 9px 8px;
+			border-bottom: 1px solid var(--border);
+			text-align: center;
+			font-weight: 500;
+		}
+		.sheet th:first-child, .sheet td:first-child,
+		.gridtable th:first-child, .gridtable td:first-child {
+			width: 22%;
+			text-align: left;
+			font-family: var(--sans);
+			font-size: 15px;
+			font-weight: 600;
+		}
+		.sheet thead th, .gridtable thead th {
+			position: sticky;
+			top: 0;
+			background: var(--card);
+			font-size: 14px;
+			font-weight: 600;
+			color: var(--text);
+		}
+		.sheet thead th { text-align: center; }
+		.sheet thead th:first-child { text-align: left; }
+		.sheet td, .gridtable td { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 15px; }
+		.sheet .sum th, .sheet .sum td { font-size: 18px; border-bottom-width: 2px; }
+		.sheet .win-col { background: #EFEAE2; }
+		.ledger { display: flex; flex-direction: column; padding-top: 4px; }
+		.band { padding: 8px 4px; border-bottom: 1px solid var(--border); }
+		.band:last-child { border-bottom: 0; }
+		.band header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+		.band .ord { width: 2.2rem; color: var(--muted); font-family: var(--mono); font-size: 13px; }
+		.band .fig { margin-left: auto; font-size: 22px; }
+		.seven {
+			display: grid;
+			grid-template-columns: repeat(7, minmax(0, 1fr));
+			gap: 8px 10px;
+		}
+		.seven span { display: block; font-size: 13px; color: var(--muted); }
+		.seven b { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 500; }
+		.pairgrid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			grid-template-rows: 1fr 1fr;
+			padding: 0;
+		}
+		.pair { min-height: 0; padding: 16px 18px; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+		.pair:nth-child(odd) { border-right: 1px solid var(--border); }
+		.pair:nth-child(-n + 2) { border-bottom: 1px solid var(--border); }
+		.pair header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+		.pair .ord { color: var(--muted); font-family: var(--mono); font-size: 13px; margin-right: 8px; }
+		.pair h3 { margin: 0; font-size: 22px; font-weight: 600; }
+		.pair .fig { font-size: 28px; }
+		.defs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; margin: 0; }
+		.defs div { display: flex; justify-content: space-between; gap: 8px; font-size: 15px; }
+		.defs dt { color: var(--muted); }
+		.defs dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 500; }
+		.bar-totals {
+			display: grid;
+			grid-template-columns: 148px repeat(4, minmax(0, 1fr));
+			gap: 8px 10px;
+			padding-bottom: 10px;
+			margin-bottom: 6px;
+			border-bottom: 1px solid var(--border);
+		}
+		.bar-total { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+		.bar-total .fig { font-size: 22px; }
+		.bar-row {
+			display: grid;
+			grid-template-columns: 148px minmax(0, 1fr);
+			gap: 10px;
+			align-items: center;
+			min-height: 36px;
+		}
+		.bar-name { font-size: 15px; font-weight: 600; }
+		.tracks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+		.track { display: grid; grid-template-columns: minmax(0, 1fr) 2.6ch; gap: 6px; align-items: center; }
+		.track .fill { display: block; height: 8px; border-radius: 999px; background: var(--panel); position: relative; }
+		.track .fill::after {
+			content: "";
+			position: absolute;
+			left: 0;
+			top: 0;
+			bottom: 0;
+			width: var(--w);
+			background: var(--c);
+			border-radius: inherit;
+		}
+		.track b { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 500; text-align: right; }
+		.table-wrap { width: 100%; }
+		.gridtable thead th {
+			text-align: center;
+			font-size: 12px;
+			padding: 6px 2px;
+			white-space: nowrap;
+			vertical-align: bottom;
+			color: #475569;
+			font-weight: 600;
+		}
+		.gridtable thead th:first-child, .gridtable tbody th { text-align: left; padding-left: 8px; }
+		.gridtable thead th.cat {
+			height: 76px;
+			padding: 4px 0 6px;
+			text-align: center;
+		}
+		.gridtable thead th.cat span {
+			display: inline-block;
+			writing-mode: vertical-rl;
+			transform: rotate(180deg);
+		}
+		.gridtable col.player { width: 152px; }
+		.gridtable col.total { width: 64px; }
+		.gridtable th:first-child, .gridtable td:first-child { width: 152px; }
+		.gridtable td:nth-child(n + 3) { text-align: center; padding: 6px 2px; }
+		.gridtable .bwho { font-size: 15px; color: var(--text); }
+		.gridtable .fig { font-weight: 600; color: #0F172A; font-size: 15px; }
+		.gridtable tr.place-1 th { background: #F6E3A1; }
+		.gridtable tr.place-2 th { background: #E4E7EC; }
+		.gridtable tr.place-3 th { background: #E8C9A8; }
+		.scat {
+			display: inline-flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			min-width: 1.75rem;
+			padding: 2px 4px;
+			border-radius: 4px;
+			font-weight: 600;
+			line-height: 1.15;
+		}
+		.scat b, .gridtable .scat {
+			font-family: var(--mono);
+			font-variant-numeric: tabular-nums;
+			font-weight: 600;
+			font-size: 13px;
+		}
+		.scat-0 { background: #EFF6FF; color: #1D4ED8; }
+		.scat-1 { background: #F0FDF4; color: #15803D; }
+		.scat-2 { background: #FEFCE8; color: #A16207; }
+		.scat-3 { background: #FFFBEB; color: #B45309; }
+		.scat-4 { background: #FEF2F2; color: #B91C1C; }
+		.scat-5 { background: #FAF5FF; color: #7E22CE; }
+		.scat-6 { background: #FDF2F8; color: #BE185D; }
+		.app-table .bpts, .phone .bpts, .app-table .fig, .phone .fig { border-bottom: 0; }
+		.app-table .split { grid-template-columns: 220px minmax(0, 1fr); gap: 12px; }
+		.app-table .listrows { overflow: auto; }
+		.app-table .brow.is-selected { background: #DBEAFE; }
+		.app-table .detail-head h3 { font-size: 18px; font-weight: 700; }
+		.app-table .ord, .phone .ord {
+			color: var(--muted);
+			font-family: var(--mono);
+			font-size: 12px;
+			font-weight: 500;
+		}
+
+		/* E on a phone. The nine-column table becomes a player stack.
+		   Games scroll across. The breakdown scrolls down. */
+		.phone-frame {
+			height: 100%;
+			display: flex;
+			justify-content: center;
+			background: #E2E8F0;
+		}
+		.phone-frame .app {
+			width: 390px;
+			border-left: 1px solid var(--border);
+			border-right: 1px solid var(--border);
+			box-shadow: var(--shadow-md);
+		}
+		.phone .nav { padding: 0 16px; }
+		.phone .brand { font-size: 16px; }
+		.phone .page-head {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 6px;
+			padding: 8px 12px;
+		}
+		.phone .page-title h2 { font-size: 18px; }
+		.phone .season { width: 100%; max-width: none; }
+		.phone .stage { padding: 0; }
+		.phone .link { min-height: 44px; }
+		.phone .pager {
+			padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+		}
+		.phone .pager-actions { display: none; }
+		.phone .pager-pages { justify-content: space-between; }
+		.phone .pager-btn { min-height: 44px; flex: 1; }
+		.phone-col { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+		.gstrip {
+			flex: none;
+			display: flex;
+			gap: 6px;
+			overflow-x: auto;
+			padding: 8px 12px;
+			border-bottom: 1px solid var(--border);
+			background: var(--card);
+			scrollbar-color: #CBD5E1 transparent;
+		}
+		.gchip {
+			flex: none;
+			min-height: 44px;
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			gap: 6px;
+			padding: 0 10px;
+			border: 1px solid var(--border);
+			border-radius: 8px;
+			background: var(--card);
+			text-align: left;
+			scroll-snap-align: start;
+			white-space: nowrap;
+		}
+		.gstrip { scroll-snap-type: x mandatory; }
+		.gchip:active { background: var(--hover); }
+		.gchip.is-selected { background: #DBEAFE; border-color: #93C5FD; }
+		.gchip time { font-size: 13px; color: var(--muted); }
+		.gchip-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+		.gchip .bwho { font-size: 13px; }
+		.gchip .bpts { font-size: 15px; }
+		.phone-game {
+			flex: none;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			padding: 0 8px 0 12px;
+			min-height: 44px;
+			border-bottom: 1px solid var(--border);
+			background: var(--card);
+		}
+		.phone-game h3 { margin: 0; font-size: 16px; font-weight: 700; }
+		.phone-game h3 span { margin-left: 6px; font-size: 12px; font-weight: 500; color: var(--muted); }
+		.mplayers { flex: 1; min-height: 0; overflow: auto; background: var(--card); }
+		.mplayer { padding: 6px 10px 8px; border-bottom: 1px solid var(--border); background: var(--card); }
+		.mplayer header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 8px;
+			min-height: 28px;
+			margin: 0 -4px;
+			padding: 2px 8px;
+			border-radius: 6px;
+		}
+		.mplayer.place-1 header { background: #F6E3A1; }
+		.mplayer.place-2 header { background: #E4E7EC; }
+		.mplayer.place-3 header { background: #E8C9A8; }
+		.mplayer .bwho { font-size: 15px; }
+		.mplayer .fig { font-size: 16px; }
+		.mfacts {
+			display: grid;
+			grid-template-columns: repeat(7, minmax(0, 1fr));
+			gap: 2px 4px;
+			margin-top: 2px;
+		}
+		.mfacts .scat { min-width: 0; width: 100%; padding: 2px 0; }
+		.mfacts .scat span {
+			display: block;
+			font-size: 9px;
+			font-weight: 600;
+			line-height: 1.2;
+			white-space: nowrap;
+			color: inherit;
+		}
+		.mfacts .scat b { font-size: 12px; color: inherit; }
+
+		@media (max-width: 1040px) {
+			.studio {
+				height: auto;
+				min-height: 100dvh;
+				grid-template-columns: 1fr;
+				overflow: visible;
+			}
+			.frame { height: 820px; flex: none; }
+		}
+	</style>
+</head>
+<body>
+	<div class="studio">
+		<aside class="rail">
+			<h1>Option E</h1>
+			<p class="lead">The full table, in Inter, JetBrains Mono, and the app colors. The phone study is that same game on a 390px screen.</p>
+			<nav class="layouts" aria-label="Layouts">
+				<p class="rail-label">Five more</p>
+				<button type="button" data-layout="sheet">
+					<span class="n">A</span>
+					<span class="name">Score sheet</span>
+					<span class="meta">Players as columns</span>
+				</button>
+				<button type="button" data-layout="ledger">
+					<span class="n">B</span>
+					<span class="name">Ledger</span>
+					<span class="meta">Four bands, seven figures</span>
+				</button>
+				<button type="button" data-layout="pairs">
+					<span class="n">C</span>
+					<span class="name">Two by two</span>
+					<span class="meta">A pair of facts per line</span>
+				</button>
+				<button type="button" data-layout="bars">
+					<span class="n">D</span>
+					<span class="name">Category bars</span>
+					<span class="meta">Same scale, big numbers</span>
+				</button>
+				<button type="button" data-layout="table" aria-current="true">
+					<span class="n">E</span>
+					<span class="name">Full table</span>
+					<span class="meta">One row per player</span>
+				</button>
+				<button type="button" data-layout="phone">
+					<span class="n">M</span>
+					<span class="name">Phone</span>
+					<span class="meta">E, restacked · 390px</span>
+				</button>
+				<p class="rail-label">Current</p>
+				<button type="button" data-layout="split">
+					<span class="n">3</span>
+					<span class="name">List and breakdown</span>
+					<span class="meta">The one you liked</span>
+				</button>
+				<p class="rail-label">Earlier</p>
+				<button type="button" data-layout="matrix">
+					<span class="n">1</span>
+					<span class="name">Player columns</span>
+					<span class="meta">16 games · Table</span>
+				</button>
+				<button type="button" data-layout="strip">
+					<span class="n">2</span>
+					<span class="name">Finish order</span>
+					<span class="meta">20 games · one line</span>
+				</button>
+				<button type="button" data-layout="cards">
+					<span class="n">4</span>
+					<span class="name">Score cards</span>
+					<span class="meta">16 games · Card</span>
+				</button>
+				<button type="button" data-layout="board">
+					<span class="n">5</span>
+					<span class="name">Season board</span>
+					<span class="meta">16 games · columns</span>
+				</button>
+			</nav>
+			<div class="notes">
+				<p><strong>Shell.</strong> The nav is the protected layout. The page fills the height under it. League, all-games, and compare can share that shell. Those pages set a screen height under the nav today, so the document scrolls.</p>
+				<p><strong>Rows.</strong> The wiki note on one-line rows is still a draft. Layouts 1, 2, and 5 keep each game on one line. Layout 3 puts the seven categories beside the list. Layout 4 keeps Card, with scores on one line.</p>
+				<p><strong>Marks.</strong> On the earlier studies, a score of 100 or more sits on a green chip and the winner’s score keeps a line in that player’s color. E and the phone drop both. 1st is gold, 2nd is silver, 3rd is bronze, and the total is a plain figure. Names stay slate. The dot carries the player color.</p>
+				<p><strong>Categories.</strong> Each figure sits in the same small tint the scoreboard uses. The column name stays slate. Gold, silver, and bronze sit behind the player, not across the score columns.</p>
+				<p><strong>Type.</strong> E and the phone study use Inter, JetBrains Mono, and the app colors. A through D still use the paper study. Names stay slate. The dot carries the player color.</p>
+				<p><strong>Phone.</strong> Games scroll across in one line. Each player is one band: place, name, and total, then all seven categories on a single line. The wiki note on one-line rows is still a draft, and it is a desktop note.</p>
+				<p><strong>Actions.</strong> Edit opens EditGameModal. Delete opens the confirm on this page. The board can open the breakdown in Modal. Button at size small is 44px tall, so those controls sit in the footer or the detail pane. Names and scores are sample data, in upload order.</p>
+			</div>
+		</aside>
+		<main class="canvas">
+			<p class="frame-label" id="frame-label">16 games on this page · the window stays still</p>
+			<div class="frame">
+				<div class="mount" id="mount"></div>
+			</div>
+		</main>
+	</div>
+	<noscript>This page draws the five layouts with a short script. Enable JavaScript to see them.</noscript>
+	<script>
+		const PLAYERS = [
+			{ name: 'Wren', color: '#3B82F6' },
+			{ name: 'Finch', color: '#F59E0B' },
+			{ name: 'Lark', color: '#8B5CF6' },
+			{ name: 'Jay', color: '#10B981' }
+		];
+		const CATS = [
+			['Birds', 'Birds', '#1D4ED8'],
+			['Bonus', 'Bonus cards', '#15803D'],
+			['Goals', 'End-of-round goals', '#A16207'],
+			['Eggs', 'Eggs', '#B45309'],
+			['Food', 'Food on cards', '#B91C1C'],
+			['Tucked', 'Tucked cards', '#7E22CE'],
+			['Nectar', 'Nectar', '#BE185D']
+		];
+		const DATES = ['Aug 2','Aug 5','Aug 8','Aug 11','Aug 14','Aug 17','Aug 20','Aug 23','Aug 26','Aug 29','Sep 1','Sep 4','Sep 7','Sep 10','Sep 13','Sep 16','Sep 19','Sep 22','Sep 25','Sep 28'];
+		const TOTALS = [
+			[91, 84, 88, 79],
+			[76, 95, 82, 90],
+			[88, 86, 104, 81],
+			[101, 88, 84, 104],
+			[80, 83, 79, 101],
+			[94, 90, 86, 85],
+			[77, 88, 93, 84],
+			[105, 96, 91, 88],
+			[82, 79, 86, 97],
+			[90, 102, 84, 81],
+			[86, 84, 89, 92],
+			[98, 91, 87, 83],
+			[81, 86, 95, 90],
+			[93, 88, 82, 96],
+			[87, 94, 90, 85],
+			[100, 89, 92, 86],
+			[84, 81, 88, 99],
+			[96, 93, 85, 90],
+			[89, 97, 91, 84],
+			[92, 86, 98, 88]
+		];
+		const SEASON_TOTAL = 42;
+		const BOOK = [
+			{ name: 'Wren', color: '#1D4ED8' },
+			{ name: 'Finch', color: '#9A3412' },
+			{ name: 'Lark', color: '#6D28D9' },
+			{ name: 'Jay', color: '#047857' }
+		];
+		const LAYOUTS = {
+			sheet: { count: 16, label: 'Score sheet · players share equal columns · categories read down' },
+			ledger: { count: 16, label: 'Ledger · the list is 232px · each player gets a full band' },
+			pairs: { count: 16, label: 'Two by two · each category is a word beside its number' },
+			bars: { count: 16, label: 'Category bars · four players on one scale · the number stays in ink' },
+			table: { count: 16, label: 'Full table · one row per player · Inter and the app colors' },
+			phone: { count: 16, label: 'Phone, 390px · games on one line · seven categories on one line' },
+			matrix: { count: 16, label: '16 games on this page · player columns · the window stays still' },
+			strip: { count: 20, label: '20 games on this page · finish order · the window stays still' },
+			split: { count: 16, label: '16 games on this page · list and breakdown · the window stays still' },
+			cards: { count: 16, label: '16 games on this page · score cards · the window stays still' },
+			board: { count: 16, label: '16 games on this page · season board · the window stays still' }
+		};
+
+		function breakdown(total, salt) {
+			const weights = [30, 15, 12, 16, 10, 9, 8].map((w, i) => w + ((salt * (i + 3)) % 5) - 2);
+			const sumW = weights.reduce((a, b) => a + b, 0);
+			const vals = weights.map((w) => Math.floor((total * w) / sumW));
+			let left = total - vals.reduce((a, b) => a + b, 0);
+			for (let i = 0; left > 0; i = (i + 1) % vals.length) {
+				vals[i] += 1;
+				left -= 1;
+			}
+			return vals;
+		}
+
+		const GAMES = DATES.map((date, i) => ({
+			id: i + 1,
+			date,
+			scores: TOTALS[i].map((total, player) => ({
+				player,
+				total,
+				parts: breakdown(total, i * 4 + player)
+			}))
+		}));
+
+		let layoutId = 'table';
+		let selectedId = 8;
+
+		function ranked(game) {
+			return [...game.scores].sort((a, b) => b.total - a.total || a.player - b.player);
+		}
+		function winnerIndex(game) {
+			return ranked(game)[0].player;
+		}
+		function scoreMarks(total, win) {
+			return `${win ? ' is-win' : ''}${total >= 100 ? ' is-hit' : ''}`;
+		}
+		function suf(n) {
+			if (n === 1) return 'st';
+			if (n === 2) return 'nd';
+			if (n === 3) return 'rd';
+			return 'th';
+		}
+		function pageCount(n) {
+			return Math.max(1, Math.ceil(SEASON_TOTAL / n));
+		}
+		function slice() {
+			return GAMES.slice(0, LAYOUTS[layoutId].count);
+		}
+		function current() {
+			return GAMES.find((g) => g.id === selectedId) || GAMES[0];
+		}
+
+		function nav() {
+			return `
+				<header class="nav">
+					<a class="brand" href="#top">Wingspan Score Tracker</a>
+					<button type="button" class="account">Account</button>
+				</header>`;
+		}
+		function pageHead() {
+			return `
+				<div class="page-head">
+					<div class="page-title">
+						<a class="back" href="#top"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Back to league</a>
+						<h2>League 1 – All Games</h2>
+					</div>
+					<label>
+						<span class="sr-only">Season</span>
+						<select class="season" aria-label="Season">
+							<option>Season 1 · Archived</option>
+							<option selected>Season 2 · Archived</option>
+							<option>Season 3</option>
+						</select>
+					</label>
+				</div>`;
+		}
+		function pager(count, withActions) {
+			const game = current();
+			const actions = withActions
+				? `<div class="pager-actions"><span class="pager-game">${game.date} · #${game.id}</span><button type="button" class="link edit" title="Opens EditGameModal">Edit</button><button type="button" class="link del" title="Opens the delete confirm">Delete</button></div>`
+				: `<div class="pager-actions"><span class="pager-game">${game.date} · #${game.id}</span></div>`;
+			return `
+				<footer class="pager">
+					${actions}
+					<div class="pager-pages">
+						<span>${count} of ${SEASON_TOTAL} · Page 1 of ${pageCount(count)}</span>
+						<button type="button" class="pager-btn" disabled>Previous</button>
+						<button type="button" class="pager-btn">Next</button>
+					</div>
+				</footer>`;
+		}
+		function shell(stage, count, withActions, tone) {
+			const cls = tone ? `app ${tone}` : 'app';
+			return `<div class="${cls}" style="--n:${PLAYERS.length}">${nav()}${pageHead()}<div class="stage">${stage}</div>${pager(count, withActions)}</div>`;
+		}
+
+		function matrix() {
+			const games = slice();
+			const head = PLAYERS.map((p) => `<span class="ph"><i class="dot" style="--c:${p.color}"></i>${p.name}</span>`).join('');
+			const rows = games.map((g) => {
+				const win = winnerIndex(g);
+				const cells = g.scores.map((s, i) => {
+					return `<span class="score${scoreMarks(s.total, i === win)}" style="--c:${PLAYERS[i].color}"${s.total >= 100 ? ' title="100 or more"' : ''}>${s.total}</span>`;
+				}).join('');
+				const pressed = g.id === selectedId ? 'true' : 'false';
+				return `<button type="button" class="mrow${g.id === selectedId ? ' is-selected' : ''}" data-id="${g.id}" aria-pressed="${pressed}"><time>${g.date}</time><span class="gid">#${g.id}</span>${cells}</button>`;
+			}).join('');
+			const stage = `<div class="panel matrix"><div class="mhead" role="row"><span>Date</span><span>#</span>${head}</div><div class="mbody">${rows}</div></div>`;
+			return shell(stage, games.length, true);
+		}
+
+		function strip() {
+			const games = slice();
+			const rows = games.map((g) => {
+				const chips = ranked(g).map((s, place) => {
+					const p = PLAYERS[s.player];
+					const win = place === 0;
+					return `<span class="chip${win ? ' is-win' : ''}" style="--c:${p.color}"><span class="place">${place + 1}</span><i class="dot" style="--c:${p.color}"></i><span class="who">${p.name}</span><span class="pts${scoreMarks(s.total, win)}"${s.total >= 100 ? ' title="100 or more"' : ''}>${s.total}</span></span>`;
+				}).join('');
+				const pressed = g.id === selectedId ? 'true' : 'false';
+				return `<button type="button" class="sline${g.id === selectedId ? ' is-selected' : ''}" data-id="${g.id}" aria-pressed="${pressed}"><time>${g.date}</time><span class="gid">#${g.id}</span><span class="chips">${chips}</span></button>`;
+			}).join('');
+			return shell(`<div class="panel strips">${rows}</div>`, games.length, true);
+		}
+
+		function cats(parts) {
+			return `<div class="cats">${CATS.map(([label, full, color], i) => `<div><span title="${full}">${label}</span><b style="color:${color}">${parts[i]}</b></div>`).join('')}</div>`;
+		}
+		function detail(game) {
+			const order = ranked(game);
+			const blocks = order.map((s, place) => {
+				const p = PLAYERS[s.player];
+				return `<div class="block" style="--c:${p.color}"><div class="block-top"><div class="block-who"><i class="dot" style="--c:${p.color}"></i>${p.name} <span class="block-place">(${place + 1}${suf(place + 1)})</span></div><span class="block-pts${scoreMarks(s.total, place === 0)}"${s.total >= 100 ? ' title="100 or more"' : ''}>${s.total} pts</span></div>${cats(s.parts)}</div>`;
+			}).join('');
+			return `
+				<section class="panel detail" aria-live="polite">
+					<div class="detail-head">
+						<div>
+							<h3>${game.date}</h3>
+							<p>Game #${game.id}</p>
+						</div>
+						<div>
+							<button type="button" class="link edit" title="Opens EditGameModal">Edit</button>
+							<button type="button" class="link del" title="Opens the delete confirm">Delete</button>
+						</div>
+					</div>
+					<div class="blocks">${blocks}</div>
+				</section>`;
+		}
+		function split() {
+			const games = slice();
+			const rows = games.map((g) => {
+				const order = ranked(g);
+				const run = order.map((s, place) => {
+					const p = PLAYERS[s.player];
+					const win = place === 0;
+					const name = win ? `<span class="who">${p.name}</span>` : `<span class="sr-only">${p.name}</span>`;
+					return `<span class="chip${win ? ' is-win' : ''}" style="--c:${p.color}"><span class="place">${place + 1}</span><i class="dot" style="--c:${p.color}"></i>${name}<span class="pts${scoreMarks(s.total, win)}"${s.total >= 100 ? ' title="100 or more"' : ''}>${s.total}</span></span>`;
+				}).join('');
+				const pressed = g.id === selectedId ? 'true' : 'false';
+				return `<button type="button" class="lrow${g.id === selectedId ? ' is-selected' : ''}" data-id="${g.id}" aria-pressed="${pressed}"><time>${g.date}</time><span class="gid">#${g.id}</span><span class="run">${run}</span></button>`;
+			}).join('');
+			const stage = `<div class="split"><div class="panel"><div class="listrows">${rows}</div></div>${detail(current())}</div>`;
+			return shell(stage, games.length, false);
+		}
+
+		function cards() {
+			const games = slice();
+			const legend = PLAYERS.map((p) => `<span><i class="dot" style="--c:${p.color}"></i>${p.name}</span>`).join('');
+			const items = games.map((g) => {
+				const win = winnerIndex(g);
+				const nums = g.scores.map((s, i) => `<span class="qcell"><i class="dot" style="--c:${PLAYERS[i].color}"></i><b class="${scoreMarks(s.total, i === win).trim()}" style="--c:${PLAYERS[i].color}"${s.total >= 100 ? ' title="100 or more"' : ''}>${s.total}</b></span>`).join('');
+				const spoken = g.scores.map((s, i) => `${PLAYERS[i].name} ${s.total}${s.total >= 100 ? ', 100 or more' : ''}`).join(', ');
+				const pressed = g.id === selectedId ? 'true' : 'false';
+				return `<button type="button" class="gcard${g.id === selectedId ? ' is-selected' : ''}" data-id="${g.id}" aria-pressed="${pressed}" aria-label="${g.date}, game ${g.id}, ${spoken}"><span class="gcard-top"><time>${g.date}</time><span class="gid">#${g.id}</span></span><span class="quad">${nums}</span></button>`;
+			}).join('');
+			const stage = `<div class="cardstage"><div class="legend">${legend}</div><div class="cards">${items}</div></div>`;
+			return shell(stage, games.length, true);
+		}
+
+		function board() {
+			const games = slice();
+			let lastMonth = '';
+			const dates = games.map((g) => {
+				const [mon, day] = g.date.split(' ');
+				const showMonth = mon !== lastMonth;
+				lastMonth = mon;
+				return `<div class="bdate${g.id === selectedId ? ' is-selected' : ''}"><span class="bmon">${showMonth ? mon : ''}</span><span>${day}</span></div>`;
+			}).join('');
+			const rows = PLAYERS.map((p, pi) => {
+				const label = `<div class="plabel"><i class="dot" style="--c:${p.color}"></i>${p.name}</div>`;
+				const cells = games.map((g) => {
+					const score = g.scores[pi];
+					const win = winnerIndex(g) === pi;
+					const sel = g.id === selectedId ? ' is-selected' : '';
+					const winClass = win ? ' is-win' : '';
+					const hitTitle = score.total >= 100 ? ', 100 or more' : '';
+					return `<button type="button" class="cell${winClass}${sel}" style="--c:${p.color}" data-id="${g.id}" aria-pressed="${g.id === selectedId}" aria-label="${g.date}, ${p.name}, ${score.total}${hitTitle}"><b class="${scoreMarks(score.total, win).trim()}">${score.total}</b></button>`;
+				}).join('');
+				return label + cells;
+			}).join('');
+			const stage = `<div class="panel"><div class="board" style="--games:${games.length}"><div class="corner"></div>${dates}${rows}</div></div>`;
+			return shell(stage, games.length, true);
+		}
+
+		function bookHead(game) {
+			return `
+				<div class="detail-head">
+					<div>
+						<h3>${game.date}</h3>
+						<p>Game #${game.id}</p>
+					</div>
+					<div>
+						<button type="button" class="link edit" title="Opens EditGameModal">Edit</button>
+						<button type="button" class="link del" title="Opens the delete confirm">Delete</button>
+					</div>
+				</div>`;
+		}
+		function fig(total, win, color) {
+			const title = total >= 100 ? ' title="100 or more"' : '';
+			return `<span class="fig${scoreMarks(total, win)}" style="--c:${color}"${title}>${total}</span>`;
+		}
+		function bookList(games) {
+			const rows = games.map((g) => {
+				const top = ranked(g)[0];
+				const person = BOOK[top.player];
+				const on = g.id === selectedId;
+				return `<button type="button" class="brow${on ? ' is-selected' : ''}" data-id="${g.id}" aria-pressed="${on}"><time>${g.date}</time><span class="bwho"><i class="dot" style="--c:${person.color}"></i>${person.name}</span><span class="bpts${scoreMarks(top.total, true)}" style="--c:${person.color}">${top.total}</span></button>`;
+			}).join('');
+			return `<div class="panel book-list"><div class="listrows">${rows}</div></div>`;
+		}
+		function bookStage(detail) {
+			return `<div class="split">${bookList(slice())}${detail}</div>`;
+		}
+		function sheet() {
+			const game = current();
+			const win = winnerIndex(game);
+			const heads = BOOK.map((person, i) => `<th scope="col"${i === win ? ' class="win-col"' : ''}><span class="bwho"><i class="dot" style="--c:${person.color}"></i>${person.name}</span></th>`).join('');
+			const totals = game.scores.map((s, i) => `<td${i === win ? ' class="win-col"' : ''}>${fig(s.total, i === win, BOOK[i].color)}</td>`).join('');
+			const cats = CATS.map(([label, full], ci) => {
+				const cells = game.scores.map((s) => `<td>${s.parts[ci]}</td>`).join('');
+				return `<tr><th scope="row" title="${full}">${label}</th>${cells}</tr>`;
+			}).join('');
+			const detail = `<section class="panel detail" aria-live="polite">${bookHead(game)}<div class="sheet-wrap"><table class="sheet"><thead><tr><th scope="col">Category</th>${heads}</tr></thead><tbody><tr class="sum"><th scope="row">Total</th>${totals}</tr>${cats}</tbody></table></div></section>`;
+			return shell(bookStage(detail), slice().length, false, 'book');
+		}
+		function ledger() {
+			const game = current();
+			const bands = ranked(game).map((s, place) => {
+				const person = BOOK[s.player];
+				const cats = CATS.map(([label, full], i) => `<div><span title="${full}">${label}</span><b>${s.parts[i]}</b></div>`).join('');
+				return `<article class="band" style="--c:${person.color}"><header><span class="ord">${place + 1}${suf(place + 1)}</span><span class="bwho"><i class="dot" style="--c:${person.color}"></i>${person.name}</span>${fig(s.total, place === 0, person.color)}</header><div class="seven">${cats}</div></article>`;
+			}).join('');
+			const detail = `<section class="panel detail" aria-live="polite">${bookHead(game)}<div class="ledger">${bands}</div></section>`;
+			return shell(bookStage(detail), slice().length, false, 'book');
+		}
+		function pairs() {
+			const game = current();
+			const cards = ranked(game).map((s, place) => {
+				const person = BOOK[s.player];
+				const defs = CATS.map(([label, full], i) => `<div><dt title="${full}">${label}</dt><dd>${s.parts[i]}</dd></div>`).join('');
+				return `<article class="pair"><header><h3><span class="ord">${place + 1}${suf(place + 1)}</span><span class="bwho"><i class="dot" style="--c:${person.color}"></i>${person.name}</span></h3>${fig(s.total, place === 0, person.color)}</header><dl class="defs">${defs}</dl></article>`;
+			}).join('');
+			const detail = `<section class="panel detail" aria-live="polite">${bookHead(game)}<div class="pairgrid">${cards}</div></section>`;
+			return shell(bookStage(detail), slice().length, false, 'book');
+		}
+		function bars() {
+			const game = current();
+			const win = winnerIndex(game);
+			const totals = game.scores.map((s, i) => `<div class="bar-total"><span class="bwho"><i class="dot" style="--c:${BOOK[i].color}"></i>${BOOK[i].name}</span>${fig(s.total, i === win, BOOK[i].color)}</div>`).join('');
+			const rows = CATS.map(([label, full], ci) => {
+				const max = Math.max(...game.scores.map((s) => s.parts[ci]), 1);
+				const tracks = game.scores.map((s, i) => {
+					const width = Math.round((s.parts[ci] / max) * 100);
+					return `<div class="track"><span class="fill" style="--c:${BOOK[i].color};--w:${width}%"></span><b>${s.parts[ci]}</b></div>`;
+				}).join('');
+				return `<div class="bar-row"><span class="bar-name" title="${full}">${full}</span><div class="tracks">${tracks}</div></div>`;
+			}).join('');
+			const detail = `<section class="panel detail" aria-live="polite">${bookHead(game)}<div class="bars"><div class="bar-totals"><span></span>${totals}</div>${rows}</div></section>`;
+			return shell(bookStage(detail), slice().length, false, 'book');
+		}
+		function plainFig(total) {
+			return `<span class="fig">${total}</span>`;
+		}
+		function medalClass(place) {
+			return place < 3 ? ` place-${place + 1}` : '';
+		}
+		function appList(games) {
+			const rows = games.map((g) => {
+				const top = ranked(g)[0];
+				const person = PLAYERS[top.player];
+				const on = g.id === selectedId;
+				return `<button type="button" class="brow${on ? ' is-selected' : ''}" data-id="${g.id}" aria-pressed="${on}"><time>${g.date}</time><span class="bwho"><i class="dot" style="--c:${person.color}"></i>${person.name}</span><span class="bpts">${top.total}</span></button>`;
+			}).join('');
+			return `<div class="panel book-list"><div class="listrows">${rows}</div></div>`;
+		}
+		function table() {
+			const game = current();
+			const games = slice();
+			const heads = CATS.map(([label, full]) => `<th class="cat" scope="col" title="${full}"><span>${label}</span></th>`).join('');
+			const rows = ranked(game).map((s, place) => {
+				const person = PLAYERS[s.player];
+				const cats = s.parts.map((n, i) => `<td><span class="scat scat-${i}">${n}</span></td>`).join('');
+				return `<tr class="${medalClass(place).trim()}"><th scope="row"><span class="bwho"><span class="ord">${place + 1}${suf(place + 1)}</span><i class="dot" style="--c:${person.color}"></i>${person.name}</span></th><td>${plainFig(s.total)}</td>${cats}</tr>`;
+			}).join('');
+			const cols = `<colgroup><col class="player"><col class="total">${CATS.map(() => '<col>').join('')}</colgroup>`;
+			const detail = `<section class="panel detail" aria-live="polite">${bookHead(game)}<div class="table-wrap"><table class="gridtable">${cols}<thead><tr><th scope="col">Player</th><th scope="col">Total</th>${heads}</tr></thead><tbody>${rows}</tbody></table></div></section>`;
+			return shell(`<div class="split">${appList(games)}${detail}</div>`, games.length, false, 'app-table');
+		}
+		function phone() {
+			const games = slice();
+			const game = current();
+			const chips = games.map((g) => {
+				const top = ranked(g)[0];
+				const person = PLAYERS[top.player];
+				const on = g.id === selectedId;
+				return `<button type="button" class="gchip${on ? ' is-selected' : ''}" data-id="${g.id}" aria-pressed="${on}"><time>${g.date}</time><span class="bwho"><i class="dot" style="--c:${person.color}"></i>${person.name}</span><span class="bpts">${top.total}</span></button>`;
+			}).join('');
+			const players = ranked(game).map((s, place) => {
+				const person = PLAYERS[s.player];
+				const facts = CATS.map(([label, full], i) => `<div class="scat scat-${i}" title="${full}"><span>${label}</span><b>${s.parts[i]}</b></div>`).join('');
+				return `<article class="mplayer${medalClass(place)}"><header><span class="bwho"><span class="ord">${place + 1}${suf(place + 1)}</span><i class="dot" style="--c:${person.color}"></i>${person.name}</span>${plainFig(s.total)}</header><div class="mfacts">${facts}</div></article>`;
+			}).join('');
+			const stage = `<div class="phone-col"><div class="gstrip" aria-label="Games">${chips}</div><div class="phone-game"><h3>${game.date} <span>Game #${game.id}</span></h3><div><button type="button" class="link edit" title="Opens EditGameModal">Edit</button><button type="button" class="link del" title="Opens the delete confirm">Delete</button></div></div><div class="mplayers">${players}</div></div>`;
+			return `<div class="phone-frame">${shell(stage, games.length, false, 'phone')}</div>`;
+		}
+
+		const DRAW = { sheet, ledger, pairs, bars, table, phone, matrix, strip, split, cards, board };
+
+		function render() {
+			document.getElementById('mount').innerHTML = DRAW[layoutId]();
+			document.getElementById('frame-label').textContent = LAYOUTS[layoutId].label;
+			document.querySelectorAll('.layouts button').forEach((btn) => {
+				if (btn.dataset.layout === layoutId) btn.setAttribute('aria-current', 'true');
+				else btn.removeAttribute('aria-current');
+			});
+			history.replaceState(null, '', '#' + layoutId);
+			document.querySelector('.gchip.is-selected')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+		}
+
+		document.querySelector('.layouts').addEventListener('click', (event) => {
+			const btn = event.target.closest('[data-layout]');
+			if (!btn) return;
+			layoutId = btn.dataset.layout;
+			render();
+		});
+		document.getElementById('mount').addEventListener('click', (event) => {
+			const row = event.target.closest('[data-id]');
+			if (!row) return;
+			selectedId = Number(row.dataset.id);
+			render();
+		});
+		document.addEventListener('keydown', (event) => {
+			if (event.target.closest('select, input, textarea')) return;
+			const ids = Object.keys(LAYOUTS);
+			const index = ids.indexOf(layoutId);
+			if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+				layoutId = ids[(index + 1) % ids.length];
+				render();
+			} else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+				layoutId = ids[(index - 1 + ids.length) % ids.length];
+				render();
+			}
+		});
+
+		const fromHash = location.hash.replace('#', '');
+		if (LAYOUTS[fromHash]) layoutId = fromHash;
+		render();
+	</script>
+</body>
+</html>
