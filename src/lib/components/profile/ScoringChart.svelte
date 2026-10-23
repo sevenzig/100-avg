@@ -155,7 +155,8 @@
 							usePointStyle: true,
 							padding: 15,
 							font: {
-								size: 11
+								family: "Inter, system-ui, sans-serif",
+								size: 12
 							}
 						}
 					},
@@ -209,8 +210,8 @@
 
 <div class="space-y-2">
 	{#if !hideTitle}
-		<h3 class="text-lg font-semibold text-slate-900">Scoring Breakdown</h3>
-		<p class="text-sm text-slate-600">Last {gameScores?.length || 0} games</p>
+		<h3 class="type-overline text-slate-900">Scoring Breakdown</h3>
+		<p class="type-caption text-slate-600">Last {gameScores?.length || 0} games</p>
 	{/if}
 	<div class="h-96 sm:h-80 md:h-96">
 		{#if gameScores && gameScores.length > 0}

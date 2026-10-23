@@ -431,8 +431,8 @@
 <div class="space-y-6">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-3xl font-bold text-slate-900">Admin Management</h1>
-			<p class="mt-1 text-sm text-slate-600">Manage leagues and users in the system</p>
+			<h1 class="type-title text-slate-900">Admin Management</h1>
+			<p class="type-caption mt-1 text-slate-600">Manage leagues and users in the system</p>
 		</div>
 	</div>
 
@@ -466,7 +466,7 @@
 	{:else if activeTab === 'leagues'}
 		<!-- Leagues Tab -->
 		<div class="flex items-center justify-between mb-4">
-			<h2 class="text-2xl font-semibold text-slate-900">League Management</h2>
+			<h2 class="type-overline text-slate-900">League Management</h2>
 			<Button on:click={openCreateModal}>Create League</Button>
 		</div>
 
@@ -484,7 +484,7 @@
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<div class="flex items-center gap-3 mb-2">
-									<h3 class="text-xl font-semibold text-slate-900">{leagueData.name}</h3>
+									<h3 class="type-heading text-slate-900">{leagueData.name}</h3>
 									<Badge variant="default">ID: {leagueData.id}</Badge>
 								</div>
 								<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-slate-600 mb-4">
@@ -530,7 +530,7 @@
 	{:else if activeTab === 'users'}
 		<!-- Users Tab -->
 		<div class="flex items-center justify-between mb-4">
-			<h2 class="text-2xl font-semibold text-slate-900">User Management</h2>
+			<h2 class="type-overline text-slate-900">User Management</h2>
 		</div>
 
 		{#if adminUsers.length === 0}
@@ -547,7 +547,7 @@
 						<div class="flex items-start justify-between">
 							<div class="flex-1">
 								<div class="flex items-center gap-3 mb-2">
-									<h3 class="text-xl font-semibold text-slate-900">{currentUserData.username}</h3>
+									<h3 class="type-heading text-slate-900">{currentUserData.username}</h3>
 									{#if currentUserData.isAdmin}
 										<Badge variant="default">Admin</Badge>
 									{/if}

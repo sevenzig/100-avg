@@ -25,7 +25,7 @@
 
 <Card hover={true} className="cursor-pointer {active ? 'border-blue-600 border-2' : ''}" on:click={handleClick}>
 	<div slot="header" class="flex justify-between items-center">
-		<h3 class="text-lg font-semibold text-slate-900">{league.name}</h3>
+		<h3 class="type-heading text-slate-900">{league.name}</h3>
 		{#if active}
 			<Badge variant="info" size="sm">Active</Badge>
 		{/if}
@@ -34,7 +34,7 @@
 		<div class="flex items-center gap-2 flex-wrap">
 			<Badge variant="default" size="sm">{league.playerCount || league.players.length} Players</Badge>
 			{#if league.lastGameDate}
-				<span class="text-sm text-slate-600">
+				<span class="type-caption text-slate-600">
 					Last game: {new Date(league.lastGameDate).toLocaleDateString()}
 				</span>
 			{/if}
@@ -42,7 +42,7 @@
 		<div class="flex gap-2 flex-wrap">
 			{#each league.players as player}
 				<span
-					class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+					class="type-micro inline-flex items-center px-2.5 py-0.5 rounded-full font-medium text-white"
 					style="background-color: {getPlayerColor(player.color)};"
 				>
 					{player.username}

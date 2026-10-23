@@ -30,23 +30,23 @@
 <Table {headers} data={stats} className="mt-4">
 	<svelte:fragment slot="row" let:row={stat} let:index>
 		<td class="px-4 py-4 text-center">
-			<span class="text-xl font-bold {getRankColor(index)}">{getRankBadge(index)}</span>
+			<span class="type-rank {getRankColor(index)}">{getRankBadge(index)}</span>
 		</td>
 		<td class="px-4 py-4">
 			<span class="font-semibold text-slate-900" style="color: {getPlayerColor(stat.color)};">
 				{stat.username}
 			</span>
 		</td>
-		<td class="px-4 py-4 text-right font-mono font-medium text-slate-900 tabular-nums">
+		<td class="type-data px-4 py-4 text-right font-medium text-slate-900">
 			{stat.avgPlacement.toFixed(2)}
 		</td>
-		<td class="px-4 py-4 text-right font-mono font-medium text-slate-900 tabular-nums">
+		<td class="type-data px-4 py-4 text-right font-medium text-slate-900">
 			{stat.firstPlaceFinishes}
 		</td>
-		<td class="px-4 py-4 text-right font-mono font-semibold text-slate-900 tabular-nums">
+		<td class="type-data px-4 py-4 text-right font-semibold text-slate-900">
 			{stat.averageScore.toFixed(1)}
 		</td>
-		<td class="px-4 py-4 text-right font-mono font-medium text-slate-700 tabular-nums">
+		<td class="type-data px-4 py-4 text-right font-medium text-slate-700">
 			<span class="text-emerald-600">{stat.wins}W</span> / <span class="text-red-500">{stat.losses}L</span>
 		</td>
 	</svelte:fragment>

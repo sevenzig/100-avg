@@ -10,7 +10,7 @@
 		<thead class="sticky top-0 z-10 bg-slate-100 border-b-2 border-slate-200">
 			<tr>
 				{#each headers as header}
-					<th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+					<th class="type-overline px-4 py-3 text-left text-slate-600">
 						{header}
 					</th>
 				{/each}

@@ -333,8 +333,8 @@
 		<div class="flex min-h-full items-center justify-center p-4 sm:p-6">
 			<div class="fixed inset-0 bg-black/30 transition-opacity" aria-hidden="true" on:click={cancelDelete}></div>
 			<div class="relative bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
-				<h3 class="text-lg font-semibold text-slate-900 mb-2">Delete Game?</h3>
-				<p class="text-slate-600 text-sm mb-4">
+				<h3 class="type-title mb-2 text-slate-900">Delete Game?</h3>
+				<p class="type-body mb-4 text-slate-600">
 					This will permanently delete game #{deleteConfirmGameId} and all its scores. This action cannot be undone.
 				</p>
 				<div class="flex gap-2 justify-end">
@@ -380,7 +380,7 @@
 					</svg>
 					Back to league
 				</a>
-				<h1 class="text-lg sm:text-xl font-bold text-slate-900 truncate">{$currentLeague.name} – All Games</h1>
+				<h1 class="type-title truncate text-slate-900">{$currentLeague.name} – All Games</h1>
 			</div>
 			<SeasonSelect
 				seasons={seasons}
@@ -401,7 +401,7 @@
 	{:else if games.length === 0}
 		<div class="flex-1 flex items-center justify-center">
 			<div class="text-center">
-				<p class="text-slate-600 mb-4">
+				<p class="type-body mb-4 text-slate-600">
 					{#if selectedSeason?.status === 'archived'}
 						No games in Season {selectedSeason.number} for this league.
 					{:else}
@@ -427,12 +427,12 @@
 						use:scrollSelected={on}
 						on:click={() => selectGame(game.id)}
 					>
-						<time datetime={game.playedAt} title={formatDateTime(game.playedAt)} class="text-[13px] text-slate-500">{formatListDate(game.playedAt)}</time>
-						<span class="inline-flex items-center gap-1 text-[13px] font-semibold text-slate-900">
+						<time datetime={game.playedAt} title={formatDateTime(game.playedAt)} class="type-caption text-slate-500">{formatListDate(game.playedAt)}</time>
+						<span class="type-caption inline-flex items-center gap-1 font-semibold text-slate-900">
 							<span class="h-2 w-2 rounded-full" style="background-color: {playerColor}"></span>
 							{player?.username ?? 'Unknown'}
 						</span>
-						<span class="font-mono text-[15px] font-semibold tabular-nums text-slate-900">{top?.totalScore ?? ''}</span>
+						<span class="type-data font-semibold text-slate-900">{top?.totalScore ?? ''}</span>
 					</button>
 				{/each}
 			</div>
@@ -451,12 +451,12 @@
 							use:scrollSelected={on}
 							on:click={() => selectGame(game.id)}
 						>
-							<time datetime={game.playedAt} title={formatDateTime(game.playedAt)} class="w-16 shrink-0 text-sm text-slate-500">{formatListDate(game.playedAt)}</time>
+							<time datetime={game.playedAt} title={formatDateTime(game.playedAt)} class="type-caption w-16 shrink-0 text-slate-500">{formatListDate(game.playedAt)}</time>
 							<span class="inline-flex min-w-0 flex-1 items-center gap-2 font-semibold text-slate-900">
 								<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {playerColor}"></span>
 								<span class="truncate">{player?.username ?? 'Unknown'}</span>
 							</span>
-							<span class="font-mono text-base font-semibold tabular-nums text-slate-900">{top?.totalScore ?? ''}</span>
+							<span class="type-data font-semibold text-slate-900">{top?.totalScore ?? ''}</span>
 						</button>
 					{/each}
 				</div>
@@ -464,9 +464,9 @@
 				<section class="min-h-0 overflow-y-auto bg-white lg:rounded-lg lg:border lg:border-slate-200" aria-live="polite">
 					{#if details}
 						<div class="flex items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
-							<h2 class="text-base font-bold text-slate-900" title={formatDateTime(details.playedAt)}>
+							<h2 class="type-heading text-slate-900" title={formatDateTime(details.playedAt)}>
 								{formatListDate(details.playedAt)}
-								<span class="ml-1.5 text-xs font-medium text-slate-500">Game #{details.id}</span>
+								<span class="type-micro ml-1.5 font-medium text-slate-500">Game #{details.id}</span>
 							</h2>
 							{#if canManageGames}
 								<div class="flex items-center">
@@ -477,7 +477,7 @@
 						</div>
 
 						<div class="hidden overflow-x-auto lg:block">
-							<table class="w-full table-fixed border-collapse text-sm">
+							<table class="type-body w-full table-fixed border-collapse">
 								<colgroup>
 									<col style="width: 240px" />
 									<col style="width: 64px" />
@@ -487,10 +487,10 @@
 								</colgroup>
 								<thead>
 									<tr class="border-b border-slate-200">
-										<th scope="col" class="px-2 py-2 text-left align-bottom text-xs font-semibold text-slate-600">Player</th>
-										<th scope="col" class="px-1 py-2 text-center align-bottom text-xs font-semibold text-slate-600">Total</th>
+										<th scope="col" class="type-overline px-2 py-2 text-left align-bottom text-slate-600">Player</th>
+										<th scope="col" class="type-overline px-1 py-2 text-center align-bottom text-slate-600">Total</th>
 										{#each CATEGORIES as cat}
-											<th scope="col" class="h-[76px] px-0 py-1 text-center align-bottom text-xs font-semibold text-slate-600" title={cat.label}>
+											<th scope="col" class="type-overline h-[76px] px-0 py-1 text-center align-bottom text-slate-600" title={cat.label}>
 												<span class="inline-block [writing-mode:vertical-rl] rotate-180">{cat.label}</span>
 											</th>
 										{/each}
@@ -503,15 +503,15 @@
 										<tr class="border-b border-slate-200">
 											<th scope="row" class="overflow-hidden px-2 py-2 text-left font-normal {medalClass(scoreDetail.placement)}">
 												<span class="inline-flex max-w-full items-center gap-2">
-													<span class="w-7 shrink-0 font-mono text-xs font-medium text-slate-500">{scoreDetail.placement}{placeSuffix(scoreDetail.placement)}</span>
+													<span class="type-micro type-data w-7 shrink-0 font-medium text-slate-500">{scoreDetail.placement}{placeSuffix(scoreDetail.placement)}</span>
 													<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {playerColor}"></span>
 													<span class="truncate font-semibold text-slate-900">{scoreDetail.username}</span>
 												</span>
 											</th>
-											<td class="text-center font-mono text-[15px] font-semibold tabular-nums text-slate-900">{scoreDetail.totalScore}</td>
+											<td class="type-data text-center font-semibold text-slate-900">{scoreDetail.totalScore}</td>
 											{#each CATEGORIES as cat}
 												<td class="px-0.5 py-2 text-center">
-													<span class="inline-flex min-w-7 items-center justify-center rounded px-1 py-0.5 font-mono text-[13px] font-semibold tabular-nums {cat.chip}">{scoreDetail.breakdown[cat.key]}</span>
+													<span class="type-micro type-data inline-flex min-w-7 items-center justify-center rounded px-1 py-0.5 font-semibold {cat.chip}">{scoreDetail.breakdown[cat.key]}</span>
 												</td>
 											{/each}
 										</tr>
@@ -527,17 +527,17 @@
 								<article class="border-b border-slate-200 bg-white px-3 py-2">
 									<header class="flex items-center justify-between gap-2 rounded-md px-2 py-1 {medalClass(scoreDetail.placement)}">
 										<span class="inline-flex items-center gap-2 font-semibold text-slate-900">
-											<span class="w-7 font-mono text-xs font-medium text-slate-500">{scoreDetail.placement}{placeSuffix(scoreDetail.placement)}</span>
+											<span class="type-micro type-data w-7 font-medium text-slate-500">{scoreDetail.placement}{placeSuffix(scoreDetail.placement)}</span>
 											<span class="h-2 w-2 shrink-0 rounded-full" style="background-color: {playerColor}"></span>
 											{scoreDetail.username}
 										</span>
-										<span class="font-mono text-base font-semibold tabular-nums text-slate-900">{scoreDetail.totalScore}</span>
+										<span class="type-data font-semibold text-slate-900">{scoreDetail.totalScore}</span>
 									</header>
 									<div class="mt-1 grid grid-cols-7 gap-1">
 										{#each CATEGORIES as cat}
 											<div class="flex flex-col items-center rounded px-0.5 py-0.5 {cat.chip}" title={cat.label}>
-												<span class="text-[9px] font-semibold leading-tight">{cat.label}</span>
-												<span class="font-mono text-[12px] font-semibold tabular-nums leading-tight">{scoreDetail.breakdown[cat.key]}</span>
+												<span class="type-chip-label">{cat.label}</span>
+												<span class="type-chip-value font-semibold">{scoreDetail.breakdown[cat.key]}</span>
 											</div>
 										{/each}
 									</div>
@@ -545,7 +545,7 @@
 							{/each}
 						</div>
 					{:else}
-						<div class="flex h-full items-center justify-center p-6 text-sm text-slate-500">Loading game…</div>
+						<div class="type-body flex h-full items-center justify-center p-6 text-slate-500">Loading game…</div>
 					{/if}
 				</section>
 			</div>

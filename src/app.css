@@ -7,16 +7,62 @@
 
 html {
 	-webkit-text-size-adjust: 100%;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 body {
 	margin: 0;
 	font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
 		Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+	font-size: 1rem;
+	line-height: 1.5;
 	background-color: #F8FAFC;
 	color: #0F172A;
+	text-wrap: pretty;
 	/* Safe area for notched devices */
-	padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+	padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+		env(safe-area-inset-left);
+}
+
+@media (min-width: 640px) {
+	body {
+		font-size: 0.875rem;
+	}
+}
+
+/* Type roles from /leagues/[id] */
+@layer components {
+	.type-title {
+		@apply text-balance text-lg font-bold leading-tight sm:text-xl;
+	}
+	.type-heading {
+		@apply text-balance text-lg font-semibold leading-snug;
+	}
+	.type-overline {
+		@apply text-sm font-semibold uppercase tracking-wider sm:text-xs;
+	}
+	.type-body {
+		@apply text-base leading-normal sm:text-sm;
+	}
+	.type-caption {
+		@apply text-sm leading-normal sm:text-xs;
+	}
+	.type-micro {
+		@apply text-xs leading-normal;
+	}
+	.type-rank {
+		@apply text-lg font-bold sm:text-base;
+	}
+	.type-data {
+		@apply font-mono tabular-nums;
+	}
+	.type-chip-label {
+		@apply text-[9px] font-semibold leading-tight sm:text-[8px];
+	}
+	.type-chip-value {
+		@apply font-mono text-[10px] leading-tight tabular-nums sm:text-[9px];
+	}
 }
 
 @layer utilities {

@@ -84,7 +84,7 @@
 
 <div>
 	<div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-		<h1 class="text-2xl sm:text-3xl font-bold text-slate-900">My Leagues</h1>
+		<h1 class="type-title text-slate-900">My Leagues</h1>
 		<Button variant="primary" on:click={handleCreateClick} className="w-full sm:w-auto">+ Create League</Button>
 	</div>
 
@@ -99,7 +99,7 @@
 	{:else if $leagues.length === 0}
 		<Card>
 			<div class="text-center py-12">
-				<p class="text-slate-600 mb-4">You don't have any leagues yet.</p>
+				<p class="type-body mb-4 text-slate-600">You don't have any leagues yet.</p>
 				<Button variant="primary" on:click={handleCreateClick}>Create Your First League</Button>
 			</div>
 		</Card>

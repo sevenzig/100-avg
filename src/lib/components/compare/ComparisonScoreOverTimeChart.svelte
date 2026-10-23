@@ -70,7 +70,7 @@
 							usePointStyle: true,
 							pointStyle: 'circle',
 							padding: 16,
-							font: { size: 12 }
+							font: { family: 'Inter, system-ui, sans-serif', size: 12 }
 						}
 					},
 					tooltip: {

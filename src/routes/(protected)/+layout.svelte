@@ -36,7 +36,7 @@
 		<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 			<div class="flex items-center justify-between min-h-16">
 				<div class="flex-1 min-w-0">
-					<a href="/leagues" class="inline-flex items-center min-h-[2.75rem] text-lg sm:text-xl font-bold text-slate-900 hover:text-blue-600 transition-colors truncate">
+					<a href="/leagues" class="type-title inline-flex min-h-[2.75rem] items-center truncate text-slate-900 transition-colors hover:text-blue-600">
 						Wingspan Score Tracker
 					</a>
 				</div>

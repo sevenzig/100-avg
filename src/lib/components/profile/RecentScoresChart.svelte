@@ -108,8 +108,8 @@
 
 <div class="space-y-2">
 	{#if !hideTitle}
-		<h3 class="text-lg font-semibold text-slate-900">Recent Scores</h3>
-		<p class="text-sm text-slate-600">Last 10 games</p>
+		<h3 class="type-overline text-slate-900">Recent Scores</h3>
+		<p class="type-caption text-slate-600">Last 10 games</p>
 	{/if}
 	<div class="h-64 sm:h-48 md:h-64">
 		{#if recentScores && recentScores.length > 0}

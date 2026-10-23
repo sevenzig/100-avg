@@ -35,7 +35,7 @@
 </script>
 
 <Card padding="p-12">
-	<h1 class="text-3xl font-bold text-center mb-8 text-slate-900">Wingspan Score Tracker</h1>
+	<h1 class="type-title mb-8 text-center text-slate-900">Wingspan Score Tracker</h1>
 	<LoginForm on:submit={handleLogin} />
 	{#if error}
 		<div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 mt-4">

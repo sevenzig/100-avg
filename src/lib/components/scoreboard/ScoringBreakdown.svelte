@@ -41,21 +41,21 @@
 		{@const maxValue = getMaxValue(category.key)}
 		<div class="space-y-2">
 			<div class="flex justify-between items-center">
-				<span class="text-slate-600 text-sm font-medium">{category.label}</span>
-				<span class="text-slate-400 text-xs">Max: {maxValue.toFixed(1)}</span>
+				<span class="type-body font-medium text-slate-600">{category.label}</span>
+				<span class="type-micro text-slate-400">Max: {maxValue.toFixed(1)}</span>
 			</div>
 			<div class="space-y-2">
 				{#each breakdown as player}
 					{@const value = getCategoryValue(player, category.key)}
 					{@const percentage = maxValue > 0 ? (value / maxValue) * 100 : 0}
 					<div class="flex items-center gap-3">
-						<span class="text-sm text-slate-700 w-24 truncate font-medium">{player.username}</span>
+						<span class="type-body w-24 truncate font-medium text-slate-700">{player.username}</span>
 						<div class="flex-1 relative bg-slate-100 rounded-full h-8 overflow-hidden">
 							<div
 								class="h-full rounded-full transition-all duration-300"
 								style="width: {percentage}%; background-color: {getColor(player.color)};"
 							></div>
-							<span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-slate-900 font-semibold font-mono">
+							<span class="type-micro type-data absolute right-2 top-1/2 -translate-y-1/2 font-semibold text-slate-900">
 								{value.toFixed(1)}
 							</span>
 						</div>

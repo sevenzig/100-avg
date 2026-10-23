@@ -29,17 +29,17 @@
 <Card hover={true} className="border-l-4 {active ? 'ring-2 ring-blue-500 ring-offset-2' : ''}" style="border-left-color: {getPlayerColor(player.color)};">
 	<div class="flex justify-between items-start">
 		<div>
-			<h4 class="text-lg font-semibold text-slate-900" style="color: {getPlayerColor(player.color)};">
+			<h4 class="type-heading text-slate-900" style="color: {getPlayerColor(player.color)};">
 				{player.username}
 			</h4>
 			{#if player.stats}
-				<div class="mt-2 space-y-1 text-sm">
+				<div class="type-body mt-2 space-y-1">
 					<div class="flex gap-4">
 						<span class="text-slate-600">W: <span class="text-emerald-600 font-medium">{player.stats.wins}</span></span>
 						<span class="text-slate-600">L: <span class="text-red-500 font-medium">{player.stats.losses}</span></span>
 					</div>
 					<div class="text-slate-600">
-						Avg: <span class="text-slate-900 font-semibold font-mono">{player.stats.avgScore.toFixed(1)}</span>
+						Avg: <span class="type-data font-semibold text-slate-900">{player.stats.avgScore.toFixed(1)}</span>
 					</div>
 				</div>
 			{/if}

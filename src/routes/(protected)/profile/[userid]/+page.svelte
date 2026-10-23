@@ -147,10 +147,10 @@
 <div class="space-y-4">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-2xl font-bold text-slate-900">
+			<h1 class="type-title text-slate-900">
 				{profile ? `${profile.displayName || profile.username}'s Profile` : 'User Profile'}
 			</h1>
-			<p class="mt-0.5 text-xs text-slate-600">
+			<p class="type-caption mt-0.5 text-slate-600">
 				{#if profile?.isOwnProfile}
 					Your profile and statistics
 				{:else if profile}
@@ -191,14 +191,14 @@
 						<div class="flex flex-wrap items-end justify-between gap-3">
 							<div class="flex gap-6">
 								<div>
-									<div class="text-xs uppercase tracking-wider text-slate-500">Career avg</div>
-									<div class="text-2xl font-semibold font-mono tabular-nums text-slate-900">
+									<div class="type-overline text-slate-500">Career avg</div>
+									<div class="type-title type-data text-slate-900">
 										{formatAvg(careerAverageScore)}
 									</div>
 								</div>
 								<div>
-									<div class="text-xs uppercase tracking-wider text-slate-500">Season avg</div>
-									<div class="text-2xl font-semibold font-mono tabular-nums text-slate-900">
+									<div class="type-overline text-slate-500">Season avg</div>
+									<div class="type-title type-data text-slate-900">
 										{formatAvg(stats?.seasonAverageScore)}
 									</div>
 								</div>
@@ -212,17 +212,17 @@
 						<div class="flex items-center justify-between">
 							<div>
 								{#if selectedChart === 'scoring'}
-									<h3 class="text-lg font-semibold text-slate-900">Scoring Breakdown</h3>
-									<p class="text-sm text-slate-600">Last {stats?.gameScores?.length || 0} games</p>
+									<h3 class="type-overline text-slate-900">Scoring Breakdown</h3>
+									<p class="type-caption text-slate-600">Last {stats?.gameScores?.length || 0} games</p>
 								{:else if selectedChart === 'placement'}
-									<h3 class="text-lg font-semibold text-slate-900">Placement History</h3>
-									<p class="text-sm text-slate-600">Last {stats?.placementHistory?.length || 0} matches</p>
+									<h3 class="type-overline text-slate-900">Placement History</h3>
+									<p class="type-caption text-slate-600">Last {stats?.placementHistory?.length || 0} matches</p>
 								{:else if selectedChart === 'category'}
-									<h3 class="text-lg font-semibold text-slate-900">Category Averages</h3>
-									<p class="text-sm text-slate-600">Last {stats?.categoryAverages?.matches || 0} matches</p>
+									<h3 class="type-overline text-slate-900">Category Averages</h3>
+									<p class="type-caption text-slate-600">Last {stats?.categoryAverages?.matches || 0} matches</p>
 								{:else if selectedChart === 'recent'}
-									<h3 class="text-lg font-semibold text-slate-900">Recent Scores</h3>
-									<p class="text-sm text-slate-600">Last 10 games</p>
+									<h3 class="type-overline text-slate-900">Recent Scores</h3>
+									<p class="type-caption text-slate-600">Last 10 games</p>
 								{/if}
 							</div>
 							<select
@@ -252,17 +252,17 @@
 			<div class="w-full lg:w-[40%]">
 				<Card padding="p-4">
 					<div slot="header" class="mb-3 pb-2">
-						<h2 class="text-lg font-semibold text-slate-900">Profile Information</h2>
+						<h2 class="type-overline text-slate-900">Profile Information</h2>
 					</div>
 					<div class="space-y-4">
 						<div>
 							<label class="block text-sm font-medium text-slate-700 mb-1">Username</label>
-							<div class="text-base text-slate-900">{profile.username}</div>
+							<div class="type-body text-slate-900">{profile.username}</div>
 						</div>
 						{#if profile.displayName}
 							<div>
 								<label class="block text-sm font-medium text-slate-700 mb-1">Display Name</label>
-								<div class="text-base text-slate-900">{profile.displayName}</div>
+								<div class="type-body text-slate-900">{profile.displayName}</div>
 							</div>
 						{/if}
 						{#if profile.platforms && profile.platforms.length > 0}

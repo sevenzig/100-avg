@@ -33,7 +33,7 @@
 			<div class="relative bg-white rounded-lg shadow-xl max-h-[90vh] flex flex-col {sizeClass === 'modal-sm' ? 'max-w-sm' : sizeClass === 'modal-lg' ? 'max-w-3xl' : sizeClass === 'modal-xl' ? 'max-w-5xl' : 'max-w-md'} w-full">
 				<div class="p-4 sm:p-6 shrink-0">
 					{#if title}
-						<h3 class="font-bold text-lg text-slate-900">{title}</h3>
+						<h3 class="type-title text-slate-900">{title}</h3>
 					{/if}
 				</div>
 				<div class="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6">

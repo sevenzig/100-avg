@@ -178,8 +178,8 @@
 <div class="space-y-4">
 	<div class="flex items-center justify-between">
 		<div>
-			<h1 class="text-2xl font-bold text-slate-900">Profile Settings</h1>
-			<p class="mt-0.5 text-xs text-slate-600">Manage your profile information and view statistics</p>
+			<h1 class="type-title text-slate-900">Profile Settings</h1>
+			<p class="type-caption mt-0.5 text-slate-600">Manage your profile information and view statistics</p>
 		</div>
 	</div>
 
@@ -204,14 +204,14 @@
 						<div class="flex flex-wrap items-end justify-between gap-3">
 							<div class="flex gap-6">
 								<div>
-									<div class="text-xs uppercase tracking-wider text-slate-500">Career avg</div>
-									<div class="text-2xl font-semibold font-mono tabular-nums text-slate-900">
+									<div class="type-overline text-slate-500">Career avg</div>
+									<div class="type-title type-data text-slate-900">
 										{formatAvg(careerAverageScore)}
 									</div>
 								</div>
 								<div>
-									<div class="text-xs uppercase tracking-wider text-slate-500">Season avg</div>
-									<div class="text-2xl font-semibold font-mono tabular-nums text-slate-900">
+									<div class="type-overline text-slate-500">Season avg</div>
+									<div class="type-title type-data text-slate-900">
 										{formatAvg(stats?.seasonAverageScore)}
 									</div>
 								</div>
@@ -225,17 +225,17 @@
 						<div class="flex items-center justify-between">
 							<div>
 								{#if selectedChart === 'scoring'}
-									<h3 class="text-lg font-semibold text-slate-900">Scoring Breakdown</h3>
-									<p class="text-sm text-slate-600">Last {stats?.gameScores?.length || 0} games</p>
+									<h3 class="type-overline text-slate-900">Scoring Breakdown</h3>
+									<p class="type-caption text-slate-600">Last {stats?.gameScores?.length || 0} games</p>
 								{:else if selectedChart === 'placement'}
-									<h3 class="text-lg font-semibold text-slate-900">Placement History</h3>
-									<p class="text-sm text-slate-600">Last {stats?.placementHistory?.length || 0} matches</p>
+									<h3 class="type-overline text-slate-900">Placement History</h3>
+									<p class="type-caption text-slate-600">Last {stats?.placementHistory?.length || 0} matches</p>
 								{:else if selectedChart === 'category'}
-									<h3 class="text-lg font-semibold text-slate-900">Category Averages</h3>
-									<p class="text-sm text-slate-600">Last {stats?.categoryAverages?.matches || 0} matches</p>
+									<h3 class="type-overline text-slate-900">Category Averages</h3>
+									<p class="type-caption text-slate-600">Last {stats?.categoryAverages?.matches || 0} matches</p>
 								{:else if selectedChart === 'recent'}
-									<h3 class="text-lg font-semibold text-slate-900">Recent Scores</h3>
-									<p class="text-sm text-slate-600">Last 10 games</p>
+									<h3 class="type-overline text-slate-900">Recent Scores</h3>
+									<p class="type-caption text-slate-600">Last 10 games</p>
 								{/if}
 							</div>
 							<select
@@ -265,7 +265,7 @@
 			<div class="w-full lg:w-[40%]">
 				<Card padding="p-4">
 					<div slot="header" class="mb-3 pb-2">
-						<h2 class="text-lg font-semibold text-slate-900">Profile Information</h2>
+						<h2 class="type-overline text-slate-900">Profile Information</h2>
 					</div>
 					<ProfileEditForm {profile} loading={saving} on:save={handleSave} on:cancel={handleCancel} />
 				</Card>

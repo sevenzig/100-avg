@@ -226,7 +226,7 @@
 <div class="min-h-screen flex flex-col bg-slate-50">
 	<div class="shrink-0 px-3 sm:px-6 py-3 bg-white border-b border-slate-200">
 		<div class="flex flex-col gap-3">
-			<div class="flex items-center gap-2 text-sm text-slate-600">
+			<div class="type-caption flex items-center gap-2 text-slate-600">
 				<a href="/leagues" class="hover:text-slate-900">Leagues</a>
 				<span aria-hidden="true">/</span>
 				{#if leagueIdValid && $currentLeague}
@@ -236,7 +236,7 @@
 				<span class="text-slate-900 font-medium">Compare players</span>
 			</div>
 			<div class="flex items-center justify-between gap-3 flex-wrap">
-				<h1 class="text-xl font-bold text-slate-900">Compare players</h1>
+				<h1 class="type-title text-slate-900">Compare players</h1>
 				<SeasonSelect
 					seasons={seasons}
 					selectedNumber={selectedSeasonNumber}
@@ -262,7 +262,7 @@
 		<div class="flex-1 p-3 sm:p-6 overflow-auto">
 			<!-- Player selection -->
 			<div class="bg-white rounded-lg border border-slate-200 shadow-sm p-4 mb-6">
-				<h2 class="text-sm font-semibold text-slate-700 mb-3">Compare with (up to {MAX_OTHER_PLAYERS})</h2>
+				<h2 class="type-overline mb-3 text-slate-700">Compare with (up to {MAX_OTHER_PLAYERS})</h2>
 				<div class="flex flex-wrap gap-2">
 					{#each otherPlayers as stat}
 						{@const isSelected = selectedIds.includes(stat.userId)}
@@ -303,12 +303,12 @@
 				<!-- Comparison table -->
 				<div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
 					<div class="overflow-x-auto">
-						<table class="w-full min-w-[600px] text-sm" role="grid">
+						<table class="type-body w-full min-w-[600px]" role="grid">
 							<thead>
 								<tr class="bg-slate-50 border-b border-slate-200">
-									<th class="text-left py-3 px-4 font-semibold text-slate-700 w-32">Metric</th>
+									<th class="type-overline w-32 px-4 py-3 text-left text-slate-700">Metric</th>
 									{#each comparisonPlayers as stat}
-										<th class="py-3 px-4 font-semibold text-slate-700 text-center min-w-[100px]">
+										<th class="min-w-[100px] px-4 py-3 text-center font-semibold text-slate-700">
 											<div class="flex flex-col items-center gap-1">
 												<span
 													class="w-3 h-3 rounded-full shrink-0"
@@ -335,7 +335,7 @@
 													: ''}"
 											>
 												<span
-													class="font-mono tabular-nums {best
+													class="type-data {best
 														? 'font-bold text-emerald-900'
 														: 'text-slate-900'}"
 												>

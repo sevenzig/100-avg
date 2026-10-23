@@ -8,8 +8,8 @@
 
 <div class="min-h-screen bg-slate-50 flex items-center justify-center p-4">
 	<div class="bg-white border border-slate-200 rounded-lg shadow-sm p-8 sm:p-12 w-full max-w-md text-center">
-		<h1 class="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Join {data.leagueName}</h1>
-		<p class="text-slate-600 mb-8">Log in with your account to join this league.</p>
+		<h1 class="type-title mb-3 text-slate-900">Join {data.leagueName}</h1>
+		<p class="type-body mb-8 text-slate-600">Log in with your account to join this league.</p>
 		<a
 			href={data.loginHref}
 			class="inline-flex items-center justify-center w-full font-medium rounded-md px-4 py-2 min-h-[2.75rem] bg-blue-600 text-white hover:bg-blue-700"

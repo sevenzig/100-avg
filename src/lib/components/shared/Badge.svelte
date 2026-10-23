@@ -12,9 +12,9 @@
 	}[variant];
 
 	$: sizeClass = {
-		sm: 'px-2 py-0.5 text-xs',
-		md: 'px-2.5 py-1 text-sm',
-		lg: 'px-3 py-1.5 text-base'
+		sm: 'px-2 py-0.5 type-micro',
+		md: 'px-2.5 py-1 type-caption',
+		lg: 'px-3 py-1.5 type-body'
 	}[size];
 </script>
 

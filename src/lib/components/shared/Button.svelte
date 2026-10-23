@@ -15,8 +15,8 @@
 
 	$: sizeClass = {
 		sm: 'px-3 py-1.5 text-sm min-h-[2.75rem]',
-		md: 'px-4 py-2 text-base min-h-[2.75rem]',
-		lg: 'px-6 py-3 text-lg min-h-[2.75rem]'
+		md: 'px-4 py-2 text-sm min-h-[2.75rem]',
+		lg: 'px-6 py-3 text-sm min-h-[2.75rem]'
 	}[size];
 </script>
 

@@ -636,7 +636,7 @@
 								</span>
 							{/each}
 							{#each editedPlayers as player (player.rowId)}
-								<span class="text-sm font-mono font-semibold text-slate-900 tabular-nums">
+								<span class="type-body type-data font-semibold text-slate-900">
 									{player.totalScore ?? 0}
 								</span>
 							{/each}
